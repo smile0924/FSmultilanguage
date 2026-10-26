@@ -27,6 +27,7 @@
 3. **解壓縮**：在下載的 ZIP 上按右鍵 → **解壓縮全部**（不要直接在 ZIP 裡面點檔案，會執行失敗）。
 4. 打開解壓縮後的資料夾，雙擊 **`start_web.bat`**。
    - 第一次執行會自動安裝需要的套件與瀏覽器（約 1～5 分鐘，只需要一次）。
+   - 瀏覽器（約 160MB）如果因為網路下載失敗也沒關係，程式會自動改用電腦上的 Microsoft Edge。
    - 如果出現「Windows 已保護您的電腦」，按 **其他資訊** → **仍要執行**。
    - 使用期間不要關掉黑色視窗；要結束時關掉它就好。
 
@@ -187,6 +188,7 @@ Excel 裡的 `[WILD]` 在遊戲中通常是圖示，`X`（「最高 X 倍」）�
 | `collect.steps` | 自動模式開啟遊戲後要做的動作（見下方） |
 | `collect.wait_ms` | 開啟遊戲後等待載入的毫秒數 |
 | `collect.device` | 模擬手機，例如 `"iPhone 13"`；`null` 用 `viewport` 尺寸 |
+| `collect.browser` | `auto`（預設：Playwright 的 Chromium，沒有就用電腦上的 Edge / Chrome）、`chromium`、`msedge`、`chrome` |
 
 ### 自動模式的 steps
 

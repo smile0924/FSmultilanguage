@@ -375,6 +375,32 @@ async def _collect_interactive(p, browser, cfg: GameConfig, sheet: TranslationSh
     return saved
 
 
+# 依序嘗試的瀏覽器：Playwright 下載的 Chromium，沒有的話改用電腦上已安裝的 Edge / Chrome
+_BROWSER_CHOICES = {
+    "auto": [None, "msedge", "chrome"],
+    "chromium": [None],
+    "msedge": ["msedge"],
+    "chrome": ["chrome"],
+}
+_BROWSER_NAMES = {None: "Chromium", "msedge": "Microsoft Edge", "chrome": "Google Chrome"}
+
+
+async def _launch(p, headless: bool, choice: str, hooks):
+    channels = _BROWSER_CHOICES.get(choice or "auto", _BROWSER_CHOICES["auto"])
+    errors = []
+    for channel in channels:
+        try:
+            browser = await p.chromium.launch(headless=headless, channel=channel)
+        except Exception as e:
+            errors.append(f"{_BROWSER_NAMES[channel]}：{str(e).splitlines()[0]}")
+            continue
+        if channel:
+            hooks.log(f"使用電腦上的 {_BROWSER_NAMES[channel]}")
+        return browser
+    raise RuntimeError("找不到可以用的瀏覽器。請執行 python -m playwright install chromium，"
+                       "或安裝 Microsoft Edge / Google Chrome。\n" + "\n".join(errors))
+
+
 async def collect_async(cfg: GameConfig, sheet: TranslationSheet, langs: list[str], out_dir: Path,
                         interactive: bool = False, headless: bool | None = None, hooks=None) -> list[Path]:
     try:
@@ -387,7 +413,7 @@ async def collect_async(cfg: GameConfig, sheet: TranslationSheet, langs: list[st
     if headless is None:
         headless = False if interactive else bool(cfg.collect.get("headless", True))
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=headless)
+        browser = await _launch(p, headless, cfg.collect.get("browser", "auto"), hooks)
         try:
             if interactive:
                 return await _collect_interactive(p, browser, cfg, sheet, langs, out_dir, hooks)

@@ -31,6 +31,8 @@ DEFAULT_COLLECT = {
     "device": None,
     "viewport": [1280, 800],
     "headless": True,
+    # auto：先用 Playwright 的 Chromium，沒有的話改用電腦上的 Edge / Chrome；也可指定 chromium / msedge / chrome
+    "browser": "auto",
     # 自動模式把瀏覽器語言設成目標語言（給依瀏覽器語言切換的遊戲用）
     "set_browser_locale": True,
     "capture_network": True,

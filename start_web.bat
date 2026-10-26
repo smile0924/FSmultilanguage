@@ -15,7 +15,7 @@ echo 第一次執行，正在安裝需要的套件，大約 1 到 5 分鐘，只
 %PY% -m pip install -r requirements.txt
 if errorlevel 1 goto :fail
 %PY% -m playwright install chromium
-if errorlevel 1 goto :fail
+if errorlevel 1 echo 瀏覽器下載失敗也沒關係，程式會改用這台電腦上的 Microsoft Edge。
 
 :run
 echo 啟動中，瀏覽器會自動打開 http://127.0.0.1:8000/ ，使用期間請不要關掉這個黑色視窗。
