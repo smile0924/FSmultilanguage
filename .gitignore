@@ -14,3 +14,6 @@ web_runs/
 
 # Excel 開啟時的暫存檔
 ~$*.xlsx
+
+# start_web 記錄已安裝的套件清單
+.installed_requirements.txt

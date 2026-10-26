@@ -19,19 +19,43 @@
 
 ## 0. 安裝
 
-### Windows：從 GitHub 下載後雙擊執行
+### Windows：下載一次，之後雙擊就會自動更新（建議）
 
-1. **安裝 Python**（只需要一次）：到 <https://www.python.org/downloads/> 下載安裝，
-   安裝畫面最下面要勾選 **Add python.exe to PATH**。
-2. **下載專案**：在 GitHub 專案頁按綠色的 **Code** 按鈕 → **Download ZIP**。
-3. **解壓縮**：在下載的 ZIP 上按右鍵 → **解壓縮全部**（不要直接在 ZIP 裡面點檔案，會執行失敗）。
-4. 打開解壓縮後的資料夾，雙擊 **`start_web.bat`**。
-   - 第一次執行會自動安裝需要的套件與瀏覽器（約 1～5 分鐘，只需要一次）。
-   - 瀏覽器（約 160MB）如果因為網路下載失敗也沒關係，程式會自動改用電腦上的 Microsoft Edge。
-   - 如果出現「Windows 已保護您的電腦」，按 **其他資訊** → **仍要執行**。
-   - 使用期間不要關掉黑色視窗；要結束時關掉它就好。
+只需要做一次：
 
-之後專案有更新時，重新下載 ZIP 即可（套件不用重裝）。
+1. **安裝 Python**：到 <https://www.python.org/downloads/> 下載安裝，安裝畫面最下面要勾選 **Add python.exe to PATH**。
+2. **安裝 Git**：到 <https://git-scm.com/download/win> 下載安裝，一路按「Next」用預設值即可。
+3. **下載專案**：打開要放專案的資料夾（例如「文件」），在檔案總管上方的網址列輸入 `cmd` 按 Enter，
+   在跳出的黑色視窗輸入下面這行後按 Enter：
+
+   ```
+   git clone https://github.com/smile0924/FSmultilanguage.git
+   ```
+
+   （repo 如果是私人的，會跳出 GitHub 登入視窗，登入一次即可。）
+
+之後每次使用：打開 `FSmultilanguage` 資料夾，雙擊 **`start_web.bat`**。它會：
+
+1. 自動從 GitHub 抓最新版（`git pull`）
+2. 第一次執行，或需要的套件有變動時，自動安裝套件
+3. 打開比對網頁
+
+注意事項：
+- 第一次執行會安裝套件與瀏覽器（約 1～5 分鐘）。瀏覽器（約 160MB）如果因為網路下載失敗也沒關係，
+  程式會自動改用電腦上的 Microsoft Edge。
+- 如果出現「Windows 已保護您的電腦」，按 **其他資訊** → **仍要執行**。
+- 使用期間不要關掉黑色視窗；要結束時關掉它就好。
+- 網頁標題旁會顯示版本號，可以確認是不是最新版。
+- 如果自己改過專案裡的檔案，自動更新可能會失敗（黑色視窗會提示，並繼續用目前的版本）。
+  這時可以先備份 `web_runs/`（之前的比對結果），刪掉資料夾再重新 `git clone`。
+
+已經裝了 **GitHub Desktop** 的話，也可以用它 Clone 這個 repo（File → Clone repository → 貼上上面的網址），
+`start_web.bat` 一樣會自動更新。
+
+### Windows：用 ZIP 下載（不會自動更新）
+
+在 GitHub 專案頁按綠色的 **Code** → **Download ZIP**，在 ZIP 上按右鍵 → **解壓縮全部**，
+再雙擊資料夾裡的 `start_web.bat`。要更新時需要重新下載 ZIP。
 
 ### 命令列安裝
 
@@ -259,6 +283,7 @@ fslang/
   web.py        網頁介面的伺服器
   web/index.html 網頁介面
   urltools.py   找出遊戲網址中的語言參數
+  launcher.py   start_web.bat 背後的程式：自動更新、安裝套件、啟動網頁
 configs/        各遊戲設定
 data/           翻譯 Excel
 examples/demo_game/  示範用假遊戲
