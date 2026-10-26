@@ -84,12 +84,17 @@ python -m fslang serve
 瀏覽器會自動打開 <http://127.0.0.1:8000/>（沒有自動打開就手動輸入這個網址）。在網頁上：
 
 1. **上傳翻譯 Excel**（拖進來或點選），選工作表，例如 `FS - Tree of Wild`。
-2. **貼上遊戲網址**：打開遊戲後瀏覽器網址列上的網址。網頁會自動找出網址裡的語言參數
-   （例如 `lang=en`），之後換成各語言逐一開啟。
-   - **自動切換語言**：網址裡有語言參數時使用，全部自動完成。
-   - **手動切換語言**：網址沒有語言參數、或要點好幾層才能打開說明頁時使用。程式會開一個瀏覽器視窗，
-     你在遊戲裡切換語言、打開說明頁，再回到網頁按「擷取這個畫面」。
-3. 勾選要比對的語言。遊戲網址用的語言代碼不同時（例如日文用 `jp`），在語言旁的小框修改。
+2. **貼上說明頁網址**（推薦），例如
+   `https://qa-static.object1.net/touch/fsnew/20260101P/games/treeofwild/assets/paytable_en_US.73fe25c7.html`。
+   程式會直接下載各語言的說明頁 HTML 比對，**不需要開瀏覽器**。只要貼一個語言，其他語言會自動找：
+   - 從遊戲首頁、資源清單（manifest）和遊戲的 JS 裡找出 `paytable_xx_XX.雜湊.html` 的檔名
+   - 試試相同雜湊、沒有雜湊的檔名
+   - 還是找不到的語言，可以在「其他語言的說明頁網址」一行貼一個
+
+   也可以改用瀏覽器擷取遊戲畫面上的文字：
+   - **自動切換語言**：貼遊戲網址，網址裡有語言參數（例如 `lang=en`）時，程式自動換成各語言逐一開啟。
+   - **手動切換語言**：程式開一個瀏覽器視窗，你在遊戲裡切換語言、打開說明頁，再回到網頁按「擷取這個畫面」。
+3. 勾選要比對的語言（自動切換語言模式下，遊戲網址的語言代碼不同時，例如日文用 `jp`，在語言旁的小框修改）。
 4. 按 **開始比對**。完成後網頁會顯示：
    - 各語言的正確率與問題數
    - 逐句結果：Excel 標準翻譯和遊戲實際文字並排，不一樣的字標紅
@@ -100,10 +105,19 @@ python -m fslang serve
 「進階設定」可以設定等待秒數、自動模式要先點的說明按鈕（例如 `#btnHelp`）、開啟後的動作（第 5 節的 steps）、
 佔位符與模擬手機。`configs/` 裡有同一個工作表的設定檔時（例如 `tree_of_wild.json`），會自動套用。
 
-> 網頁和比對程式都在你自己的電腦上執行（只開放本機連線），所以這台電腦要能連到遊戲網址。
+> 網頁和比對程式都在你自己的電腦上執行（只開放本機連線），所以這台電腦要能連到說明頁 / 遊戲網址。
 > 每次比對的檔案（上傳的 Excel、擷取檔、截圖、報表）存在 `web_runs/`。
 
 ## 2. 命令列快速開始（Tree of Wild）
+
+### 說明頁模式（不需要瀏覽器）
+
+```bash
+python -m fslang paytable -c configs/tree_of_wild.json https://qa-static.object1.net/touch/fsnew/20260101P/games/treeofwild/assets/paytable_en_US.73fe25c7.html
+```
+
+自動找不到的語言可以用 `--extra 網址1 網址2` 補上。下載的說明頁存在 `captures/tree_of_wild_paytable/`
+（原始 HTML 在 `raw/`），報表存在 `reports/`。以下 2-2、2-3 是用瀏覽器擷取的方式。
 
 ### 2-1 先檢查 Excel 本身
 
@@ -291,6 +305,7 @@ fslang/
   launcher.py   start_web.bat 背後的程式：自動更新、安裝套件、啟動網頁
   browsers.py   找可以用的瀏覽器（Playwright 的 Chromium、Edge、Chrome）
   doctor.py     診斷工具（diagnose.bat）
+  paytable.py   說明頁模式：找出並下載各語言的說明頁 HTML
 configs/        各遊戲設定
 data/           翻譯 Excel
 examples/demo_game/  示範用假遊戲

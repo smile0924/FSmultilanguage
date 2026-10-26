@@ -35,6 +35,7 @@ from .collector import collect
 from .config import GameConfig, config_from_args, load_config
 from .excel import TranslationSheet, list_sheets, load_sheet
 from .matcher import FAIL_STATUSES, STATUS_LABELS, STATUS_ORDER, summarize
+from .paytable import collect_paytables, parse_paytable_url
 from .pipeline import CompareOutcome, compare_captures, write_report
 from .urltools import detect_lang_in_url, suggest_game_codes
 
@@ -108,6 +109,8 @@ class Job:
         self.result: dict | None = None
         self.error: str | None = None
         self.cancel = False
+        self.paytable_url = ""            # 說明頁模式：使用者貼的說明頁網址
+        self.extra_urls: list[str] = []   # 說明頁模式：其他語言的說明頁網址
 
     @property
     def captures(self) -> Path:
@@ -148,12 +151,16 @@ class Job:
 
     def run(self):
         try:
-            self.log(f"開始：{self.sheet.sheet}，{len(self.langs)} 個語言，"
-                     f"{'自動切換語言' if self.mode == 'auto' else '手動切換語言'}")
-            if self.mode == "auto":
-                self.log(f"遊戲網址：{self.cfg.collect['game_url']}")
-            collect(self.cfg, self.sheet, self.langs, self.captures, interactive=self.mode == "manual",
-                    headless=self.headless, hooks=WebHooks(self))
+            label = {"paytable": "說明頁檔案", "auto": "自動切換語言", "manual": "手動切換語言"}[self.mode]
+            self.log(f"開始：{self.sheet.sheet}，{len(self.langs)} 個語言，{label}")
+            if self.mode == "paytable":
+                collect_paytables(self.cfg, self.sheet, self.langs, self.captures, self.paytable_url,
+                                  self.extra_urls, hooks=WebHooks(self))
+            else:
+                if self.mode == "auto":
+                    self.log(f"遊戲網址：{self.cfg.collect['game_url']}")
+                collect(self.cfg, self.sheet, self.langs, self.captures, interactive=self.mode == "manual",
+                        headless=self.headless, hooks=WebHooks(self))
             with self.lock:
                 self.state = "comparing"
             self.log("比對中…")
@@ -322,11 +329,18 @@ class App:
         cfg.collect["game_lang_codes"] = {l["code"]: (l.get("game_code") or l["code"]).strip()
                                           for l in langs if l.get("code") in codes}
 
-        mode = "manual" if params.get("mode") == "manual" else "auto"
+        mode = params.get("mode") if params.get("mode") in ("paytable", "manual") else "auto"
         url = (params.get("url") or "").strip()
         if url and not re.match(r"https?://", url):
-            raise UserError("遊戲網址要以 http:// 或 https:// 開頭")
-        if mode == "auto":
+            raise UserError("網址要以 http:// 或 https:// 開頭")
+        extra_urls = [u.strip() for u in params.get("extra_urls") or [] if u.strip()]
+        if mode == "paytable":
+            if not parse_paytable_url(url):
+                raise UserError("請貼上說明頁檔案的網址（檔名要像 paytable_en_US.73fe25c7.html）")
+            for u in extra_urls:
+                if not parse_paytable_url(u):
+                    raise UserError(f"看不出這個網址是哪個語言的說明頁：{u}")
+        elif mode == "auto":
             if not url:
                 raise UserError("請輸入遊戲網址")
             found = detect_lang_in_url(url)
@@ -368,18 +382,22 @@ class App:
 
         jid = _new_id()
         job = Job(jid, self.workdir / "jobs" / f"{jid}_{cfg.game_id}", cfg, sheet, codes, mode, bool(headless))
+        job.paytable_url, job.extra_urls = url, extra_urls
         job.dir.mkdir(parents=True, exist_ok=True)
         self.jobs[jid] = job
         threading.Thread(target=job.run, daemon=True).start()
         return {"job_id": jid}
 
     def detect_url(self, params: dict) -> dict:
-        found = detect_lang_in_url(params.get("url") or "")
+        url = params.get("url") or ""
+        found = detect_lang_in_url(url)
         codes = params.get("codes") or []
+        ref = parse_paytable_url(url)
+        paytable = {"locale": ref.locale, "stem": ref.stem} if ref else None
         if not found:
-            return {"found": False, "game_codes": {c: c for c in codes}}
+            return {"found": False, "game_codes": {c: c for c in codes}, "paytable": paytable}
         return {"found": True, "template": found.template, "where": found.found, "sample": found.sample,
-                "game_codes": suggest_game_codes(found.sample, codes)}
+                "game_codes": suggest_game_codes(found.sample, codes), "paytable": paytable}
 
     def job(self, jid: str) -> Job:
         job = self.jobs.get(jid)

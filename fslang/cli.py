@@ -6,6 +6,7 @@
     python -m fslang compare  -c configs/tree_of_wild.json
     python -m fslang run      -c configs/tree_of_wild.json      (collect + compare)
     python -m fslang serve                                       (網頁介面)
+    python -m fslang paytable -c configs/tree_of_wild.json <說明頁網址>   (下載說明頁直接比對)
 """
 
 from __future__ import annotations
@@ -183,6 +184,22 @@ def cmd_serve(args):
     return 0
 
 
+def cmd_paytable(args):
+    from .paytable import collect_paytables
+
+    cfg, sheet = _load(args)
+    url = args.url or cfg.collect.get("paytable_url")
+    if not url:
+        raise SystemExit("請給說明頁網址，例如 python -m fslang paytable -c configs/tree_of_wild.json "
+                         "https://…/paytable_en_US.73fe25c7.html")
+    if not args.captures:
+        args.captures = str(Path("captures") / f"{cfg.game_id}_paytable")
+    saved = collect_paytables(cfg, sheet, _langs(args, sheet), Path(args.captures), url, args.extra)
+    if not saved:
+        return 1
+    return cmd_compare(args)
+
+
 def cmd_doctor(args):
     from .doctor import main as doctor_main
 
@@ -253,6 +270,13 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--no-browser", action="store_true", help="不要自動打開瀏覽器")
     p.add_argument("--workdir", default="web_runs", help="上傳檔、擷取檔、報表的存放資料夾")
     p.set_defaults(func=cmd_serve)
+
+    p = sub.add_parser("paytable", help="下載各語言的說明頁 HTML 直接比對（不需要瀏覽器）")
+    common(p)
+    p.add_argument("url", nargs="?", help="任一語言的說明頁網址，例如 https://…/paytable_en_US.73fe25c7.html")
+    p.add_argument("--extra", nargs="*", default=[], help="自動找不到的語言，直接給說明頁網址")
+    compare_args(p)
+    p.set_defaults(func=cmd_paytable)
 
     p = sub.add_parser("doctor", help="診斷：版本、瀏覽器、連接埠、QA 站連線")
     p.set_defaults(func=cmd_doctor)

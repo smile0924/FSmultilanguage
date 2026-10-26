@@ -55,7 +55,8 @@ input[type=url], input[type=text], input[type=search], input[type=number], selec
 textarea { font-family: ui-monospace, Consolas, monospace; font-size: 13px; resize: vertical; }
 input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
 #sheetBox { margin-top: 12px; max-width: 460px; }
-.seg { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+.seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; }
+#extraBox { margin-top: 12px; }
 .seg label { display: flex; gap: 8px; align-items: flex-start; border: 1px solid var(--border); border-radius: 10px;
   padding: 10px 12px; cursor: pointer; }
 .seg label:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
@@ -68,7 +69,9 @@ code { font-family: ui-monospace, Consolas, monospace; font-size: .92em; backgro
 .lang .lname { font-weight: 600; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lang .gcode { width: 76px; padding: 3px 6px; font-size: 13px; }
 .lang small { color: var(--muted); font-size: 11.5px; }
-body.manual .gcode, body.manual .gcode-note { display: none; }
+body.manual .gcode, body.manual .gcode-note, body.paytable .gcode, body.paytable .gcode-note,
+body.paytable .browser-only { display: none; }
+body:not(.paytable) .paytable-only { display: none; }
 button.link { border: 0; background: none; color: var(--accent); cursor: pointer; font: inherit; font-size: 13px; font-weight: 400; padding: 0 4px; }
 details.adv { border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; }
 details.adv summary { cursor: pointer; font-weight: 600; }
@@ -178,16 +181,20 @@ mark.ins { background: var(--mark-ins); }
     <div class="step">
       <div class="step-num">2</div>
       <div class="step-body">
-        <h2>遊戲網址</h2>
-        <input id="url" type="url" placeholder="打開遊戲後，瀏覽器網址列上的網址，例如 https://…/game.jsp?id=…&amp;lang=en"
+        <h2>說明頁或遊戲網址</h2>
+        <input id="url" type="url" placeholder="說明頁檔案，例如 https://…/assets/paytable_en_US.73fe25c7.html"
                autocomplete="off" spellcheck="false">
-        <div id="urlHint" class="hint">貼上打開遊戲後瀏覽器上的網址。</div>
-        <div class="seg" role="radiogroup" aria-label="切換語言的方式">
-          <label><input type="radio" name="mode" value="auto" checked>
+        <div id="urlHint" class="hint">貼上任一語言說明頁的網址。</div>
+        <div class="seg" role="radiogroup" aria-label="取得遊戲文字的方式">
+          <label><input type="radio" name="mode" value="paytable" checked>
+            <span><b>說明頁檔案（推薦）</b><small>貼上一個語言的說明頁網址（paytable_en_US.….html），自動找其他語言的說明頁直接比對，不用開瀏覽器</small></span></label>
+          <label><input type="radio" name="mode" value="auto">
             <span><b>自動切換語言</b><small>網址裡有語言參數（例如 lang=en），程式自動換成各語言、逐一擷取</small></span></label>
           <label><input type="radio" name="mode" value="manual">
             <span><b>手動切換語言</b><small>開一個瀏覽器視窗，由你在遊戲裡切換語言、打開說明頁，再到這個網頁按「擷取」</small></span></label>
         </div>
+        <label class="field paytable-only" id="extraBox"><span>其他語言的說明頁網址（選填，一行一個；只有自動找不到的語言才需要）</span>
+          <textarea id="extraUrls" rows="2" spellcheck="false" placeholder="https://…/assets/paytable_th_TH.xxxxxxxx.html"></textarea></label>
       </div>
     </div>
 
@@ -203,15 +210,15 @@ mark.ins { background: var(--mark-ins); }
     <details class="adv">
       <summary>進階設定</summary>
       <div class="adv-grid">
-        <label class="field"><span>開啟遊戲後等待幾秒再擷取</span><input id="wait" type="number" min="0" step="0.5" value="8"></label>
-        <label class="field"><span>說明按鈕（選填，自動模式會先點它再擷取）</span>
+        <label class="field browser-only"><span>開啟遊戲後等待幾秒再擷取</span><input id="wait" type="number" min="0" step="0.5" value="8"></label>
+        <label class="field browser-only"><span>說明按鈕（選填，自動模式會先點它再擷取）</span>
           <input id="helpSel" type="text" placeholder="例如 #btnHelp 或 text=規則" spellcheck="false"></label>
-        <label class="field wide"><span>開啟後的動作（選填，JSON；可點擊、翻頁、多次擷取，格式見 README）</span>
+        <label class="field wide browser-only"><span>開啟後的動作（選填，JSON；可點擊、翻頁、多次擷取，格式見 README）</span>
           <textarea id="steps" rows="3" spellcheck="false" placeholder='[{"click": "#btnInfo"}, {"capture": "說明第1頁"}, {"click": "text=Next"}, {"capture": "說明第2頁"}]'></textarea></label>
         <label class="field wide"><span>佔位符（一行一個正規表示式；[WILD] 這類圖示、X 這類數值，比對時當成萬用字元）</span>
           <textarea id="placeholders" rows="2" spellcheck="false"></textarea></label>
-        <label class="field"><span>模擬裝置</span><select id="device"><option value="">電腦瀏覽器</option></select></label>
-        <label class="check"><input type="checkbox" id="showBrowser"> 自動模式也顯示瀏覽器視窗</label>
+        <label class="field browser-only"><span>模擬裝置</span><select id="device"><option value="">電腦瀏覽器</option></select></label>
+        <label class="check browser-only"><input type="checkbox" id="showBrowser"> 自動模式也顯示瀏覽器視窗</label>
       </div>
     </details>
 
@@ -388,15 +395,20 @@ mark.ins { background: var(--mark-ins); }
   $('#noLangs').addEventListener('click', () => { $$('.lc').forEach((c) => { c.checked = false; }); saveOff(); validate(); });
 
   // ------------------------------------------------------------ 2. 遊戲網址
-  let detectTimer = null, urlFound = false;
+  let detectTimer = null, urlFound = false, urlPaytable = null, modePicked = false;
   $('#url').addEventListener('input', () => { clearTimeout(detectTimer); detectTimer = setTimeout(detectUrl, 300); validate(); });
-  $$('input[name=mode]').forEach((r) => r.addEventListener('change', () => { applyMode(); detectUrl(); }));
+  $$('input[name=mode]').forEach((r) => r.addEventListener('change', () => { modePicked = true; applyMode(); detectUrl(); }));
 
   function mode() { return $('input[name=mode]:checked').value; }
   function applyMode() {
     document.body.classList.toggle('manual', mode() === 'manual');
+    document.body.classList.toggle('paytable', mode() === 'paytable');
     $('#start').textContent = mode() === 'manual' ? '開啟瀏覽器開始擷取' : '開始比對';
     validate();
+  }
+  function setMode(m) {
+    const r = $('input[name=mode][value="' + m + '"]');
+    if (r && !r.checked) { r.checked = true; applyMode(); }
   }
 
   async function detectUrl() {
@@ -405,11 +417,14 @@ mark.ins { background: var(--mark-ins); }
     const s = currentSheet();
     const codes = s ? s.languages.map((l) => l.code) : [];
     urlFound = false;
+    urlPaytable = null;
     if (!url) {
       hint.className = 'hint';
-      hint.textContent = mode() === 'manual'
-        ? '手動模式：可以貼遊戲列表或遊戲的網址當作起始頁（也可以留空）。'
-        : '貼上打開遊戲後瀏覽器上的網址。';
+      hint.textContent = {
+        paytable: '貼上任一語言說明頁的網址，例如 …/assets/paytable_en_US.73fe25c7.html。',
+        auto: '貼上打開遊戲後瀏覽器上的網址。',
+        manual: '手動模式：可以貼遊戲列表或遊戲的網址當作起始頁（也可以留空）。',
+      }[mode()];
       validate();
       return;
     }
@@ -417,13 +432,26 @@ mark.ins { background: var(--mark-ins); }
       const d = await api('/api/detect-url', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url, codes }) });
       if (url !== $('#url').value.trim()) return;
       urlFound = d.found;
+      urlPaytable = d.paytable || null;
+      // 沒有手動選過模式時，依網址自動選：說明頁檔案 -> 說明頁模式，其他 -> 自動切換語言
+      if (!modePicked) setMode(urlPaytable ? 'paytable' : 'auto');
       if (d.found) {
-        hint.className = 'hint ok';
-        hint.innerHTML = mode() === 'manual'
-          ? '手動模式會從這個網址開始，語言由你在遊戲裡切換。'
-          : '✓ 偵測到語言：<code>' + esc(d.where) + '</code>，會自動換成各語言。網址樣板：<code>' + esc(d.template) + '</code>';
         suggestedCodes = d.game_codes || {};
         $$('.gcode').forEach((g) => { if (!editedCodes.has(g.dataset.code) && suggestedCodes[g.dataset.code]) g.value = suggestedCodes[g.dataset.code]; });
+      }
+      if (mode() === 'paytable') {
+        if (urlPaytable) {
+          hint.className = 'hint ok';
+          hint.innerHTML = '✓ 這是說明頁檔案（語言 <code>' + esc(urlPaytable.locale) + '</code>）。'
+            + '會自動找其他語言的說明頁，直接下載比對，不需要開瀏覽器。';
+        } else {
+          hint.className = 'hint warn-text';
+          hint.innerHTML = '這個網址不是說明頁檔案（檔名要像 <code>paytable_en_US.73fe25c7.html</code>）。'
+            + '如果是遊戲本身的網址，請改選「自動切換語言」或「手動切換語言」。';
+        }
+      } else if (d.found && mode() === 'auto') {
+        hint.className = 'hint ok';
+        hint.innerHTML = '✓ 偵測到語言：<code>' + esc(d.where) + '</code>，會自動換成各語言。網址樣板：<code>' + esc(d.template) + '</code>';
       } else if (mode() === 'manual') {
         hint.className = 'hint';
         hint.textContent = '手動模式會從這個網址開始，語言由你在遊戲裡切換。';
@@ -449,7 +477,7 @@ mark.ins { background: var(--mark-ins); }
   function validate() {
     const running = jobId && !result && !$('#run').hidden && $('#runTitle').dataset.state !== 'end';
     const ok = upload && currentSheet() && selectedLangs().length > 0
-      && (mode() === 'manual' || ($('#url').value.trim() && urlFound));
+      && (mode() === 'manual' || ($('#url').value.trim() && (mode() === 'paytable' ? !!urlPaytable : urlFound)));
     $('#start').disabled = !ok || running;
   }
 
@@ -463,6 +491,7 @@ mark.ins { background: var(--mark-ins); }
       help_selector: $('#helpSel').value.trim(), steps: $('#steps').value.trim(),
       placeholders: $('#placeholders').value.split('\n'), device: $('#device').value,
       show_browser: $('#showBrowser').checked,
+      extra_urls: $('#extraUrls').value.split('\n').map((x) => x.trim()).filter(Boolean),
     };
     store.set('form', { url: params.url, mode: params.mode, wait: $('#wait').value, help: params.help_selector,
       device: params.device, show: params.show_browser });
@@ -475,7 +504,7 @@ mark.ins { background: var(--mark-ins); }
       $('#run').hidden = false;
       $('#runTitle').dataset.state = '';
       $('#stop').hidden = false;
-      $('#runTitle').textContent = params.mode === 'manual' ? '手動擷取中' : '自動擷取中';
+      $('#runTitle').textContent = { paytable: '下載說明頁中', manual: '手動擷取中', auto: '自動擷取中' }[params.mode];
       $('#run').scrollIntoView({ behavior: 'smooth', block: 'start' });
       validate();
       poll();

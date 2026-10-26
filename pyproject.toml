@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fslang"
-version = "0.5.0"
+version = "0.6.0"
 description = "FS 遊戲多語系比對工具：以翻譯 Excel 為標準，檢查遊戲實際顯示的文字"
 requires-python = ">=3.9"
 dependencies = ["openpyxl>=3.1", "playwright>=1.40"]
