@@ -1,0 +1,29 @@
+{
+ "lang": "pt",
+ "title": "Tree of Wild",
+ "help": {
+  "row2": "Desbloquear Jogo Grátis",
+  "row3": "Obtenha Rodadas Grátis no topo e aumente o Multiplicador a cada salto!",
+  "row4": "[WILD] sobe a cada ganho",
+  "row5": "[WILD] atinge a linha superior para ganhar 10 Rodadas Grátis",
+  "row6": "Ganhe o Multiplicador de até X no Jogo Grátis",
+  "row7": "No jogo principal, existem 2000 maneiras de ganhar com quatro símbolos nos Rolos 1 e 5; cinco símbolos nos Rolos 2, 3 e 4.",
+  "row8": "No Jogo Grátis, existem 2916 maneiras de ganhar com três símbolos nos Rolos 1 e 5; seis símbolos nos Rolos 2 e 4; e nove símbolos no Rolo 3.",
+  "row9": "Subida WILD do Pai Natal",
+  "row10": "No início de cada rodada, um símbolo WILD pode aparecer aleatoriamente no fundo de qualquer rolo e permanecer nos rolos até ao final da rodada.",
+  "row11": "Quando uma combinação vencedora é formada durante as cascatas, o símbolo WILD sobe uma posição e substitui o símbolo nessa posição.",
+  "row12": "A direção de subida é determinada aleatoriamente: verticalmente (no mesmo rolo) ou diagonalmente (para o rolo adjacente).",
+  "row13": "Se o símbolo WILD estiver posicionado numa extremidade do rolo, mover-se-á na diagonal na direção oposta.",
+  "row14": "Quando o símbolo WILD atinge a linha superior dos rolos, permanece no lugar e atribui 10 rodadas grátis.",
+  "row15": "No início de cada rodada, um símbolo WILD pode aparecer aleatoriamente na parte inferior de qualquer rolo com um multiplicador inicial de x1.",
+  "row16": "O símbolo WILD e o Multiplicador de Prémios serão repostos no final da Rodada Grátis.",
+  "row17": "Se o Escalador de WILD avançar",
+  "row18": "Nível 1",
+  "row19": "Linha reta para cima",
+  "row20": "Diagonal para cima",
+  "row21": "A grelha do rolo é dividida em três níveis e o multiplicador aumenta com base no nível atual e na direção de subida.",
+  "row22": "A direção de subida é aleatória e cada passo aplica a regra com base na sua própria direção e nível atual.",
+  "row23": "Um caminho misto resultará em um valor multiplicador entre todos os valores verticais e todos os valores diagonais.",
+  "row24": "Todos os ganhos são multiplicados pelo multiplicador atual do WILD."
+ }
+}

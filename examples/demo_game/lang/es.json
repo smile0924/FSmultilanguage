@@ -1,0 +1,29 @@
+{
+ "lang": "es",
+ "title": "Tree of Wild",
+ "help": {
+  "row2": "DESBLOQUEAR JUEGO GRATIS",
+  "row3": "¡Obtén Giros Gratis en la parte superior y aumenta el Multiplicador con cada salto!",
+  "row4": "[WILD] sube cada victoria",
+  "row5": "[WILD] llega a la fila superior para ganar 10 Giros Gratis",
+  "row6": "Gana un Multiplicador de hasta X en el Juego Gratis",
+  "row7": "En el juego principal, hay 2.000 formas de ganar con cuatro símbolos en los rodillos 1 y 5, y cinco símbolos en los rodillos 2, 3 y 4.",
+  "row8": "En el Juego Gratis, hay 2.916 formas de ganar con tres símbolos en los rodillos 1 y 5, seis símbolos en los rodillos 2 y 4, y nueve símbolos en el rodillo 3.",
+  "row9": "Escalada WILD de Papá Noel",
+  "row10": "Al comienzo de cada giro, puede aparecer un símbolo WILD aleatoriamente en la parte inferior de cualquier rodillo y permanecer en los rodillos hasta el final del giro.",
+  "row11": "Cuando se forma una combinación ganadora durante las cascadas, el símbolo WILD sube una posición y sustituye al símbolo en esa posición.",
+  "row12": "La dirección de ascenso se determina aleatoriamente: verticalmente (en el mismo rodillo) o en diagonal (hacia el rodillo adyacente).",
+  "row13": "Si el símbolo WILD se encuentra en un borde del rodillo, se moverá en diagonal en la dirección opuesta.",
+  "row14": "Cuando el símbolo WILD llega a la fila superior de los rodillos, permanece en su sitio y otorga 10 giros gratis.",
+  "row15": "Al comienzo de cada giro, puede aparecer un símbolo WILD aleatoriamente en la parte inferior de cualquier rodillo con un multiplicador inicial de x1.",
+  "row16": "El símbolo WILD y el multiplicador de ganancias se restablecerán al final del Giro Gratis.",
+  "row17": "Si el Escalador WILD",
+  "row18": "Nivel 1",
+  "row19": "Sube en línea recta",
+  "row20": "Sube en diagonal",
+  "row21": "La cuadrícula de rodillos se divide en tres niveles y el multiplicador aumenta en función tanto del nivel actual como de la dirección de ascenso.",
+  "row22": "La dirección de ascenso es aleatoria y cada paso aplica la regla según su propia dirección y el nivel actual.",
+  "row23": "Una trayectoria mixta dará como resultado un valor multiplicador entre todos los valores verticales y todos los valores diagonales.",
+  "row24": "Todas las ganancias se multiplican por el multiplicador actual del WILD."
+ }
+}

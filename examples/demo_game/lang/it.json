@@ -1,0 +1,28 @@
+{
+ "lang": "it",
+ "title": "Tree of Wild",
+ "help": {
+  "row2": "Sblocca Gioco Gratuito",
+  "row3": "Ottieni Giri Gratuiti in alto e aumenta il Moltiplicatore ad ogni salto!",
+  "row4": "Il [WILD] scala ogni vittoria",
+  "row5": "Il [WILD] raggiunge la vetta per vincere 10 Giri Gratuiti",
+  "row6": "Moltiplicatore di vincita fino a X nel Gioco Gratuito",
+  "row7": "Nel gioco principale, ci sono 2.000 modi per vincere con quattro simboli sui rulli 1 e 5; cinque simboli sui rulli 2, 3 e 4.",
+  "row8": "Nel Gioco Gratuito, ci sono 2.916 modi per vincere con tre simboli sui rulli 1 e 5; sei simboli sui rulli 2 e 4; e nove simboli sul rullo 3.",
+  "row10": "All'inizio di ogni giro, un simbolo WILD può apparire casualmente sul fondo di qualsiasi rullo e rimanere sui rulli fino alla fine del giro.",
+  "row11": "Quando si forma una combinazione vincente durante le cascate, il simbolo WILD sale di una posizione e sostituisce il simbolo in quella posizione.",
+  "row12": "La direzione di salita è determinata in modo casuale: in verticale (sullo stesso rullo) o in diagonale (sul rullo adiacente).",
+  "row13": "Se il simbolo WILD è posizionato su un bordo del rullo, si muoverà in diagonale nella direzione opposta.",
+  "row14": "Quando il simbolo WILD raggiunge la riga superiore dei rulli, rimane in posizione e assegna 10 giri gratuiti.",
+  "row15": "All'inizio di ogni giro, un simbolo WILD può apparire casualmente sul fondo di qualsiasi rullo con un moltiplicatore iniziale di x1.",
+  "row16": "Il simbolo WILD e il moltiplicatore di vincita si resetteranno alla fine del Giro Gratuito.",
+  "row17": "Se lo scalatore WILD va",
+  "row18": "Livello 1",
+  "row19": "Dritto verso l'alto",
+  "row20": "Diagonale su",
+  "row21": "La griglia dei rulli è divisa in tre livelli e il moltiplicatore aumenta in base al livello corrente e alla direzione di salita.",
+  "row22": "La direzione di salita è casuale e ogni passo applica la regola in base alla propria direzione e al livello corrente.",
+  "row23": "Un percorso misto si tradurrà in un valore moltiplicatore tra tutti i valori verticali e tutti i valori diagonali.",
+  "row24": "Tutte le vincite vengono moltiplicate per il moltiplicatore corrente del WILD."
+ }
+}

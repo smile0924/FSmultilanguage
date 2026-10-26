@@ -1,0 +1,43 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tree of Wild (demo)</title>
+<style>
+  body { font-family: sans-serif; background: #12301f; color: #f4f1de; margin: 0; padding: 16px; }
+  #btnHelp { font-size: 20px; width: 44px; height: 44px; border-radius: 22px; }
+  #help { background: #1d4930; padding: 12px 16px; margin-top: 12px; border-radius: 8px; }
+  .sym { width: 1.6em; height: 1.6em; vertical-align: middle; }
+</style>
+</head>
+<body>
+<h1 id="title">Tree of Wild</h1>
+<button id="btnHelp" aria-label="help">?</button>
+<div id="help" style="display:none"></div>
+<script>
+  // 示範用假遊戲：依網址 ?lang=xx 載入 lang/xx.json，找不到就退回英文（模擬漏翻的情況）
+  const lang = new URLSearchParams(location.search).get('lang') || 'en';
+  const esc = (s) => s.replace(/[&<>"]/g, (c) => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+  async function load(code) {
+    const r = await fetch('lang/' + code + '.json');
+    if (!r.ok) throw new Error(r.status);
+    return r.json();
+  }
+  (async () => {
+    let dict;
+    try { dict = await load(lang); } catch (e) { dict = await load('en'); }
+    const help = document.getElementById('help');
+    for (const text of Object.values(dict.help)) {
+      const p = document.createElement('p');
+      // [WILD] 顯示成圖示，X 顯示成實際倍數
+      p.innerHTML = esc(text)
+        .replace(/\[WILD\]/g, '<img class="sym" alt="" src="wild.svg">')
+        .replace(/(^|[^A-Za-z])X(?![A-Za-z])/g, '$1x500');
+      help.appendChild(p);
+    }
+    document.getElementById('btnHelp').onclick = () => { help.style.display = 'block'; };
+  })();
+</script>
+</body>
+</html>

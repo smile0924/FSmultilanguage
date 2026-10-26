@@ -1,0 +1,66 @@
+{
+  "_說明": "示範設定：比對本機假遊戲 examples/demo_game（裡面故意放了幾個翻譯錯誤）。先執行 python -m http.server 8765 -d examples/demo_game",
+  "game_id": "demo_tree_of_wild",
+  "game_name": "Tree of Wild (demo)",
+  "excel": "../data/FS_Version_137_EUR_Verified.xlsx",
+  "sheet": "FS - Tree of Wild",
+  "header_row": 1,
+  "source_language": "en",
+  "_languages": "Excel 表頭 -> 語言代碼（也是擷取檔的檔名，例如 th.json）",
+  "languages": {
+    "EN": "en",
+    "ITALY": "it",
+    "Thai": "th",
+    "Japan": "ja",
+    "Korea": "ko",
+    "Turkish": "tr",
+    "Russia": "ru",
+    "Spain": "es",
+    "French": "fr",
+    "Portugal": "pt",
+    "Hindi": "hi",
+    "Bangladesh": "bn"
+  },
+  "_revisions": "修訂欄 -> 被修訂的語言欄。修訂欄有值時以修訂欄為準，原欄視為舊翻譯",
+  "revisions": {
+    "TH (revised)": "Thai"
+  },
+  "_placeholders": "佔位符（正規表示式）：[WILD] 在遊戲中通常是圖示，X 是倍數數值，比對時當作萬用字元",
+  "placeholders": [
+    "\\[[^\\]]*\\]",
+    "(?<![A-Za-z])X(?![A-Za-z])"
+  ],
+  "match": {
+    "similarity_threshold": 0.6,
+    "wildcard_max_chars": 40
+  },
+  "collect": {
+    "list_url": "",
+    "_game_url": "假遊戲用 ?lang= 參數切換語言",
+    "game_url": "http://127.0.0.1:8765/index.html?lang={game_lang}",
+    "_game_lang_codes": "遊戲網址用的語言代碼和上面不同時才需要，例如 {\"ja\": \"jp\", \"ko\": \"kr\"}",
+    "game_lang_codes": {},
+    "_steps": "等說明按鈕出現 -> 點開說明 -> 擷取",
+    "steps": [
+      {
+        "wait_for": "#btnHelp"
+      },
+      {
+        "click": "#btnHelp"
+      },
+      {
+        "capture": "help"
+      }
+    ],
+    "wait_ms": 500,
+    "timeout_ms": 60000,
+    "device": null,
+    "viewport": [
+      1280,
+      800
+    ],
+    "headless": true,
+    "capture_network": true,
+    "screenshot": true
+  }
+}

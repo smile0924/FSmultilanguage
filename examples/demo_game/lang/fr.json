@@ -1,0 +1,29 @@
+{
+ "lang": "fr",
+ "title": "Tree of Wild",
+ "help": {
+  "row2": "Débloquez le jeu gratuit",
+  "row3": "Atteignez le sommet pour obtenir des tours gratuits et augmentez le multiplicateur à chaque saut !",
+  "row4": "Le [WILD] monte à chaque gain",
+  "row5": "Le [WILD] atteint la rangée supérieure pour octroyer 10 tours gratuits",
+  "row6": "Multiplicateur de gains allant jusqu'à X pendant le jeu gratuit",
+  "row7": "Dans le jeu principal, il y a 2 000 façons de gagner : quatre symboles sur les rouleaux 1 et 5, et cinq symboles sur les rouleaux 2, 3 et 4.",
+  "row8": "Dans le jeu gratuit, il y a 2 916 façons de gagner : trois symboles sur les rouleaux 1 et 5, six symboles sur les rouleaux 2 et 4, et neuf symboles sur le rouleau 3.",
+  "row9": "Ascension du WILD du Père Noël",
+  "row10": "Au début de chaque tour, un symbole WILD peut apparaître aléatoirement en bas de n'importe quel rouleau et y rester jusqu'à la fin du tour.",
+  "row11": "Lorsqu'une combinaison gagnante est formée durant les cascades, le symbole WILD monte d'une position et remplace le symbole qui s'y trouvait.",
+  "row12": "La direction de l'ascension est déterminée aléatoirement : verticalement (sur le même rouleau) ou en diagonale (vers le rouleau adjacent).",
+  "row13": "Si le symbole WILD se trouve sur le bord d'un rouleau, il se déplacera en diagonale dans la direction opposée.",
+  "row14": "Lorsque le symbole WILD atteint la rangée supérieure des rouleaux, il reste en place et octroie 10 tours gratuits.",
+  "row15": "Au début de chaque tour, un symbole WILD peut apparaître aléatoirement en bas de n'importe quel rouleau avec un multiplicateur initial de x1.",
+  "row16": "Le symbole WILD et le multiplicateur de gains sont réinitialisés à la fin des tours gratuits.",
+  "row17": "Ascension du WILD",
+  "row18": "Niveau 1",
+  "row19": "Verticale ascendante",
+  "row20": "Diagonale ascendante",
+  "row21": "La grille des rouleaux est divisée en trois niveaux ; le multiplicateur augmente en fonction du niveau actuel et de la direction de l'ascension.",
+  "row22": "La direction de l'ascension est aléatoire et chaque étape applique la règle correspondant à sa propre direction et au niveau actuel.",
+  "row23": "Un parcours mixte donnera une valeur de multiplicateur située entre celles obtenues par des déplacements entièrement verticaux et entièrement diagonaux.",
+  "row24": "Tous les gains sont multipliés par le multiplicateur actuel du WILD."
+ }
+}
