@@ -13,10 +13,16 @@ import asyncio
 import copy
 import dataclasses
 import json
+import os
 import queue
 import re
+import signal
+import socket
+import subprocess
 import threading
+import time
 import traceback
+import urllib.request
 import uuid
 import webbrowser
 from datetime import datetime
@@ -463,6 +469,11 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(self.app.detect_url(params))
             if path == "/api/jobs":
                 return self._json(self.app.start_job(params))
+            if path == "/api/shutdown":
+                # 新版啟動時用來關掉舊版（只接受本機、且有 X-Fslang 標頭的請求）
+                print("收到新版的關閉要求，這個比對網頁即將結束。")
+                threading.Thread(target=self.server.shutdown, daemon=True).start()
+                return self._json({"ok": True})
             m = re.fullmatch(r"/api/jobs/([\w-]+)/action", path)
             if m:
                 self.app.job(m.group(1)).act(params.get("action", ""))
@@ -488,23 +499,110 @@ def _default_configs_dir() -> Path | None:
     return None
 
 
+class _Server(ThreadingHTTPServer):
+    daemon_threads = True
+    # Windows 的 SO_REUSEADDR 會讓兩個程式同時占用同一個連接埠（連線隨機送到其中一個），
+    # 結果是開了新版、網頁卻還是舊版在回應，所以 Windows 上關掉它
+    allow_reuse_address = os.name != "nt"
+
+
+def _listening(port: int) -> bool:
+    try:
+        with socket.create_connection(("127.0.0.1", port), timeout=0.5):
+            return True
+    except OSError:
+        return False
+
+
+def _wait_closed(port: int, seconds: float) -> bool:
+    end = time.time() + seconds
+    while time.time() < end:
+        if not _listening(port):
+            return True
+        time.sleep(0.2)
+    return not _listening(port)
+
+
+def _running_fslang(port: int) -> dict | None:
+    """這個連接埠上如果是（任何版本的）fslang 網頁，回傳它的 /api/info。"""
+    try:
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/api/info", timeout=2) as res:
+            data = json.loads(res.read().decode("utf-8"))
+    except Exception:
+        return None
+    return data if isinstance(data, dict) and "devices" in data else None
+
+
+def _listening_pid(port: int) -> int | None:
+    try:
+        if os.name == "nt":
+            out = subprocess.run(["netstat", "-ano", "-p", "TCP"], capture_output=True, text=True,
+                                 errors="replace", timeout=10).stdout
+            for line in out.splitlines():
+                parts = line.split()
+                # TCP  127.0.0.1:8000  0.0.0.0:0  LISTENING  1234（狀態文字可能被翻譯，所以看對方位址）
+                if (len(parts) >= 5 and parts[0].upper() == "TCP" and parts[1].rsplit(":", 1)[-1] == str(port)
+                        and parts[2] in ("0.0.0.0:0", "[::]:0") and parts[-1].isdigit()):
+                    return int(parts[-1])
+            return None
+        out = subprocess.run(["lsof", "-nP", "-t", f"-iTCP:{port}", "-sTCP:LISTEN"], capture_output=True,
+                             text=True, timeout=10).stdout.split()
+        return int(out[0]) if out else None
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return None
+
+
+def _kill(pid: int):
+    try:
+        if os.name == "nt":
+            subprocess.run(["taskkill", "/PID", str(pid), "/T", "/F"], capture_output=True, timeout=15)
+        else:
+            os.kill(pid, signal.SIGTERM)
+    except (OSError, subprocess.SubprocessError):
+        pass
+
+
+def stop_running_server(port: int) -> bool:
+    """如果連接埠上已經有 fslang 網頁在跑（例如沒關掉的舊版視窗），把它關掉。回傳連接埠是否已空出來。"""
+    info = _running_fslang(port)
+    if info is None:
+        return not _listening(port)
+    print(f"偵測到已經在執行的比對網頁（版本 {info.get('version', '0.2 以前')}），先把它關掉…")
+    try:
+        req = urllib.request.Request(f"http://127.0.0.1:{port}/api/shutdown", data=b"{}", method="POST",
+                                     headers={"X-Fslang": "1", "Content-Type": "application/json"})
+        urllib.request.urlopen(req, timeout=3).close()
+    except Exception:
+        pass  # 舊版沒有關閉功能
+    if _wait_closed(port, 5):
+        return True
+    pid = _listening_pid(port)
+    if pid and pid != os.getpid():
+        _kill(pid)
+        if _wait_closed(port, 8):
+            return True
+    print("無法自動關閉舊的比對網頁，請先關掉舊的黑色視窗。這次先改用其他連接埠。")
+    return False
+
+
 def make_server(host: str = "127.0.0.1", port: int = 8000, workdir: str | Path = "web_runs",
                 configs_dir: Path | None = None) -> ThreadingHTTPServer:
     last_error = None
     for p in range(port, port + 20) if port else [0]:
         try:
-            server = ThreadingHTTPServer((host, p), Handler)
+            server = _Server((host, p), Handler)
             break
         except OSError as e:  # 連接埠被占用就換下一個
             last_error = e
     else:
         raise SystemExit(f"無法啟動伺服器：{last_error}")
-    server.daemon_threads = True
     server.app = App(Path(workdir), configs_dir or _default_configs_dir())  # type: ignore[attr-defined]
     return server
 
 
 def serve(host: str = "127.0.0.1", port: int = 8000, open_browser: bool = True, workdir: str | Path = "web_runs"):
+    if port:
+        stop_running_server(port)
     server = make_server(host, port, workdir)
     shown = "127.0.0.1" if host in ("0.0.0.0", "", "::") else host
     url = f"http://{shown}:{server.server_address[1]}/"
