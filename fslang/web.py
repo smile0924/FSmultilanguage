@@ -24,6 +24,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, quote, unquote, urlsplit
 
+from . import __version__
 from .collector import collect
 from .config import GameConfig, config_from_args, load_config
 from .excel import TranslationSheet, list_sheets, load_sheet
@@ -427,7 +428,7 @@ class Handler(BaseHTTPRequestHandler):
                 if path in ("/", "/index.html"):
                     return self._send(200, (STATIC_DIR / "index.html").read_bytes(), "text/html; charset=utf-8")
                 if path == "/api/info":
-                    return self._json({"devices": DEVICES})
+                    return self._json({"devices": DEVICES, "version": __version__})
                 m = re.fullmatch(r"/api/jobs/([\w-]+)", path)
                 if m:
                     since = int(parse_qs(parts.query).get("since", ["0"])[0] or 0)
@@ -507,7 +508,7 @@ def serve(host: str = "127.0.0.1", port: int = 8000, open_browser: bool = True, 
     server = make_server(host, port, workdir)
     shown = "127.0.0.1" if host in ("0.0.0.0", "", "::") else host
     url = f"http://{shown}:{server.server_address[1]}/"
-    print(f"網頁介面已啟動：{url}")
+    print(f"fslang {__version__} 網頁介面已啟動：{url}")
     print("在網頁上傳 Excel、貼上遊戲網址就可以開始比對。按 Ctrl+C 結束。")
     if open_browser:
         threading.Timer(0.8, webbrowser.open, [url]).start()

@@ -152,7 +152,7 @@ mark.ins { background: var(--mark-ins); }
 <body>
 <header class="top">
   <div class="wrap">
-    <h1>FS 多語系比對</h1>
+    <h1>FS 多語系比對 <small class="muted" id="version" style="font-size:13px;font-weight:400"></small></h1>
     <p class="sub">以翻譯 Excel 為標準，檢查遊戲各語言實際顯示的文字</p>
   </div>
 </header>
@@ -281,8 +281,9 @@ mark.ins { background: var(--mark-ins); }
     const headers = Object.assign({ 'X-Fslang': '1' }, opts.headers || {});
     const res = await fetch(path, Object.assign({}, opts, { headers }));
     let data;
-    try { data = await res.json(); } catch (e) { data = { error: '伺服器沒有回應（' + res.status + '）' }; }
-    if (!res.ok || data.error) throw new Error(data.error || res.statusText);
+    try { data = await res.json(); } catch (e) { throw new Error('伺服器沒有回應（' + res.status + '）'); }
+    // 只用 HTTP 狀態判斷 API 錯誤；比對工作的狀態本身也有 error 欄位（比對失敗的原因），不能當成連線錯誤
+    if (!res.ok) throw new Error(data.error || res.statusText);
     return data;
   }
   const store = {
@@ -505,7 +506,12 @@ mark.ins { background: var(--mark-ins); }
         renderResults(st.result);
         return;
       }
-      if (st.state === 'error') { endRun('發生錯誤'); $('#runStatus').innerHTML = '<span class="error">' + esc(st.error) + '</span>'; $('#logBox').open = true; return; }
+      if (st.state === 'error') {
+        endRun('發生錯誤');
+        $('#runStatus').innerHTML = '<span class="error" style="white-space:pre-wrap">' + esc(st.error) + '</span>';
+        $('#logBox').open = true;
+        return;
+      }
     } catch (e) {
       $('#runStatus').innerHTML = '<span class="error">和伺服器的連線中斷：' + esc(e.message) + '（請確認 fslang serve 還在執行）</span>';
     }
@@ -760,6 +766,7 @@ mark.ins { background: var(--mark-ins); }
     if (f.show) $('#showBrowser').checked = true;
     try {
       const info = await api('/api/info');
+      $('#version').textContent = '版本 ' + info.version;
       info.devices.filter(Boolean).forEach((d) => { const o = document.createElement('option'); o.value = d; o.textContent = d; $('#device').appendChild(o); });
       if (f.device) $('#device').value = f.device;
     } catch (e) { /* 伺服器沒開時下面的操作會顯示錯誤 */ }

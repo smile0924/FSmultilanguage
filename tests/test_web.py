@@ -11,6 +11,7 @@ from pathlib import Path
 
 import pytest
 
+import fslang
 from fslang.web import make_server
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -71,6 +72,7 @@ def wait_job(base, jid, answers=(), timeout=180):
 def test_index_page(base):
     html = call(base, "/", raw=True).decode("utf-8")
     assert "FS 多語系比對" in html and "/api/upload" in html
+    assert call(base, "/api/info")["version"] == fslang.__version__
 
 
 def test_upload_lists_sheets_and_preset(base):
