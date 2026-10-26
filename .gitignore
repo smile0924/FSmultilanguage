@@ -10,6 +10,7 @@ venv/
 # 擷取結果與報表（每次執行產生）
 captures/
 reports/
+web_runs/
 
 # Excel 開啟時的暫存檔
 ~$*.xlsx

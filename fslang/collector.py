@@ -190,8 +190,41 @@ class _State:
     page = None
 
 
+class ConsoleHooks:
+    """命令列版：訊息印到主控台，互動模式從鍵盤讀取。網頁版見 web.py 的 WebHooks。"""
+
+    def log(self, message: str):
+        print(message)
+
+    def progress(self, done: int, total: int, lang: str | None):
+        pass
+
+    def cancelled(self) -> bool:
+        return False
+
+    async def ask_language(self, lang: str, name: str, index: int, total: int) -> str:
+        """請使用者切換語言。回傳 capture / skip / quit"""
+        ans = await _ainput(f"\n[{index}/{total}] 請把遊戲切換成「{name}」({lang}) 並打開要檢查的畫面，"
+                            f"完成後按 Enter 擷取（s=跳過, q=結束）：")
+        return {"q": "quit", "s": "skip"}.get(ans.strip().lower(), "capture")
+
+    async def ask_more(self, lang: str, name: str, count: int, pages: list[str]) -> str:
+        """已擷取一次。回傳 capture（翻頁後再擷取）/ next / quit"""
+        for u in pages:
+            print(f"    頁面：{u}")
+        ans = await _ainput("  已擷取。還有下一頁說明就翻頁後按 Enter 再擷取；換下一個語言請輸入 n（q=結束）：")
+        return {"n": "next", "s": "next", "q": "quit"}.get(ans.strip().lower(), "capture")
+
+
+async def _ainput(prompt: str) -> str:
+    try:
+        return await asyncio.get_running_loop().run_in_executor(None, input, prompt)
+    except EOFError:
+        return "q"
+
+
 async def _run_steps(state: _State, steps: list[dict], cfg: GameConfig, lang: str, out_dir: Path,
-                     snapshots: list[dict], context):
+                     snapshots: list[dict], context, hooks):
     game_lang = cfg.game_lang(lang)
     timeout = cfg.collect["timeout_ms"]
     for raw in steps:
@@ -222,7 +255,7 @@ async def _run_steps(state: _State, steps: list[dict], cfg: GameConfig, lang: st
                 snapshots.append(await take_snapshot(context, str(step["capture"]), out_dir, lang,
                                                      len(snapshots), cfg.collect["screenshot"]))
             else:
-                print(f"  ! 不認得的步驟：{raw}")
+                hooks.log(f"  ! 不認得的步驟：{raw}")
         except Exception as e:
             if step.get("optional"):
                 continue
@@ -251,13 +284,18 @@ def _start_url(cfg: GameConfig, lang: str) -> str:
     return _fmt(url, lang, cfg.game_lang(lang))
 
 
-async def _collect_auto(p, browser, cfg: GameConfig, sheet: TranslationSheet, langs: list[str], out_dir: Path):
+async def _collect_auto(p, browser, cfg: GameConfig, sheet: TranslationSheet, langs: list[str], out_dir: Path,
+                        hooks):
     if not cfg.collect.get("game_url") and not cfg.collect.get("steps"):
-        print("! 設定檔沒有 game_url 也沒有 steps，只會擷取列表頁。建議先用 --interactive 模式。")
+        hooks.log("! 設定檔沒有 game_url 也沒有 steps，只會擷取列表頁。建議先用 --interactive 模式。")
     saved = []
-    for lang in langs:
+    for i, lang in enumerate(langs):
+        if hooks.cancelled():
+            hooks.log("已停止。")
+            break
+        hooks.progress(i, len(langs), lang)
         name = sheet.language(lang).name
-        print(f"- [{lang}] {name} 擷取中…")
+        hooks.log(f"- [{lang}] {name} 擷取中…")
         context = await _new_context(p, browser, cfg, lang)
         recorder = NetworkRecorder()
         if cfg.collect.get("capture_network", True):
@@ -275,30 +313,24 @@ async def _collect_auto(p, browser, cfg: GameConfig, sheet: TranslationSheet, la
                 except Exception:
                     pass
             await state.page.wait_for_timeout(int(cfg.collect.get("wait_ms", 0)))
-            await _run_steps(state, cfg.collect.get("steps", []), cfg, lang, out_dir, snapshots, context)
+            await _run_steps(state, cfg.collect.get("steps", []), cfg, lang, out_dir, snapshots, context, hooks)
             if not snapshots:
                 snapshots.append(await take_snapshot(context, "end", out_dir, lang, 0, cfg.collect["screenshot"]))
         except Exception as e:
-            print(f"  ! {lang} 擷取失敗：{e}")
+            hooks.log(f"  ! {lang} 擷取失敗：{e}")
             await context.close()
             continue
         network = await recorder.flush()
         path = _save(out_dir, cfg, lang, "auto", snapshots, network)
-        print(f"  已儲存 {path}（{_count(snapshots, network)}）")
+        hooks.log(f"  已儲存 {path.name}（{_count(snapshots, network)}）")
         saved.append(path)
         await context.close()
+    hooks.progress(len(langs), len(langs), None)
     return saved
 
 
-async def _ainput(prompt: str) -> str:
-    try:
-        return await asyncio.get_running_loop().run_in_executor(None, input, prompt)
-    except EOFError:
-        return "q"
-
-
 async def _collect_interactive(p, browser, cfg: GameConfig, sheet: TranslationSheet, langs: list[str],
-                               out_dir: Path):
+                               out_dir: Path, hooks):
     context = await _new_context(p, browser, cfg, None)
     recorder = NetworkRecorder()
     if cfg.collect.get("capture_network", True):
@@ -309,43 +341,47 @@ async def _collect_interactive(p, browser, cfg: GameConfig, sheet: TranslationSh
         try:
             await page.goto(url, wait_until="domcontentloaded", timeout=cfg.collect["timeout_ms"])
         except Exception as e:
-            print(f"! 開啟 {url} 失敗：{e}")
-    print("\n瀏覽器已開啟。請在瀏覽器中打開「{}」，接著依照下面的提示操作。".format(cfg.game_name))
-    print("提示：擷取的是「當下畫面」的文字，請先打開要檢查的畫面（例如遊戲說明/規則頁）。")
+            hooks.log(f"! 開啟 {url} 失敗：{e}")
+    hooks.log(f"瀏覽器已開啟。請在瀏覽器中打開「{cfg.game_name}」，接著依照提示操作。")
+    hooks.log("提示：擷取的是「當下畫面」的文字，請先打開要檢查的畫面（例如遊戲說明/規則頁）。")
     saved = []
     for i, lang in enumerate(langs, start=1):
+        hooks.progress(i - 1, len(langs), lang)
         name = sheet.language(lang).name
-        ans = await _ainput(f"\n[{i}/{len(langs)}] 請把遊戲切換成「{name}」({lang}) 並打開要檢查的畫面，"
-                            f"完成後按 Enter 擷取（s=跳過, q=結束）：")
-        ans = ans.strip().lower()
-        if ans == "q":
+        ans = await hooks.ask_language(lang, name, i, len(langs))
+        if ans == "quit":
             break
-        if ans == "s":
+        if ans == "skip":
+            hooks.log(f"- [{lang}] {name} 跳過")
+            await recorder.flush()
             continue
         snapshots = []
         while True:
             snap = await take_snapshot(context, f"page{len(snapshots) + 1}", out_dir, lang, len(snapshots),
                                        cfg.collect["screenshot"])
             snapshots.append(snap)
-            for u in snap["pages"]:
-                print(f"    頁面：{u}")
-            more = await _ainput("  已擷取。還有下一頁說明就翻頁後按 Enter 再擷取；換下一個語言請輸入 n：")
-            if more.strip().lower() in ("n", "q", "s"):
+            hooks.log(f"- [{lang}] {name} 擷取第 {len(snapshots)} 次")
+            more = await hooks.ask_more(lang, name, len(snapshots), snap["pages"])
+            if more != "capture":
                 break
         network = await recorder.flush()
         path = _save(out_dir, cfg, lang, "interactive", snapshots, network)
-        print(f"  已儲存 {path}（{_count(snapshots, network)}）")
+        hooks.log(f"  已儲存 {path.name}（{_count(snapshots, network)}）")
         saved.append(path)
+        if more == "quit":
+            break
+    hooks.progress(len(langs), len(langs), None)
     await context.close()
     return saved
 
 
 async def collect_async(cfg: GameConfig, sheet: TranslationSheet, langs: list[str], out_dir: Path,
-                        interactive: bool = False, headless: bool | None = None) -> list[Path]:
+                        interactive: bool = False, headless: bool | None = None, hooks=None) -> list[Path]:
     try:
         from playwright.async_api import async_playwright
     except ImportError as e:
         raise SystemExit("需要先安裝 Playwright：pip install playwright && python -m playwright install chromium") from e
+    hooks = hooks or ConsoleHooks()
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     if headless is None:
@@ -354,8 +390,8 @@ async def collect_async(cfg: GameConfig, sheet: TranslationSheet, langs: list[st
         browser = await p.chromium.launch(headless=headless)
         try:
             if interactive:
-                return await _collect_interactive(p, browser, cfg, sheet, langs, out_dir)
-            return await _collect_auto(p, browser, cfg, sheet, langs, out_dir)
+                return await _collect_interactive(p, browser, cfg, sheet, langs, out_dir, hooks)
+            return await _collect_auto(p, browser, cfg, sheet, langs, out_dir, hooks)
         finally:
             await browser.close()
 

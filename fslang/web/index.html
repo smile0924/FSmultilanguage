@@ -1,0 +1,772 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FS 多語系比對</title>
+<style>
+:root {
+  --bg: #f4f6f9; --panel: #ffffff; --text: #1b2230; --muted: #5d6878; --border: #dce2ea; --soft: #eef1f5;
+  --accent: #2459d6; --accent-soft: #e6edfc; --accent-ink: #ffffff;
+  --pass: #1d8a4c; --pass-bg: #dff3e7; --warn: #9a6400; --warn-bg: #fbefcf;
+  --fail: #c0312f; --fail-bg: #fbe0df; --miss: #b4511a; --miss-bg: #fde6d6;
+  --none: #6b7686; --none-bg: #e9edf2; --mark-del: #ffd2cf; --mark-ins: #ffd2cf;
+  --shadow: 0 1px 2px rgba(20, 30, 50, .06), 0 4px 16px rgba(20, 30, 50, .05);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #12161d; --panel: #1a2029; --text: #e5e9f0; --muted: #9aa5b5; --border: #2c3542; --soft: #222a35;
+    --accent: #6f9bff; --accent-soft: #23314d; --accent-ink: #0d1424;
+    --pass: #5fd08f; --pass-bg: #173826; --warn: #f0c35a; --warn-bg: #3a2f12;
+    --fail: #ff8a85; --fail-bg: #45201f; --miss: #ffab73; --miss-bg: #432918;
+    --none: #9aa5b5; --none-bg: #262e3a; --mark-del: #6b2a27; --mark-ins: #6b2a27;
+    --shadow: none; color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--bg); color: var(--text);
+  font: 15px/1.55 system-ui, -apple-system, "Segoe UI", "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", sans-serif; }
+.wrap { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
+header.top { background: var(--panel); border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+header.top .wrap { padding-top: 18px; padding-bottom: 16px; }
+h1 { margin: 0; font-size: 22px; letter-spacing: .02em; }
+h2 { margin: 0 0 10px; font-size: 17px; }
+.sub, .hint, .muted { color: var(--muted); }
+.sub { margin: 2px 0 0; }
+.hint { font-size: 13.5px; margin-top: 6px; }
+.card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 20px;
+  box-shadow: var(--shadow); margin-bottom: 18px; }
+.step { display: flex; gap: 14px; padding: 4px 0 18px; border-bottom: 1px dashed var(--border); margin-bottom: 18px; }
+.step-num { flex: 0 0 28px; height: 28px; border-radius: 50%; background: var(--accent); color: var(--accent-ink);
+  display: grid; place-items: center; font-weight: 700; font-size: 14px; margin-top: -1px; }
+.step-body { flex: 1; min-width: 0; }
+.drop { display: block; border: 2px dashed var(--border); border-radius: 10px; padding: 22px; text-align: center;
+  cursor: pointer; transition: border-color .15s, background .15s; }
+.drop:hover, .drop.over { border-color: var(--accent); background: var(--accent-soft); }
+.drop.done { border-style: solid; text-align: left; padding: 12px 16px; }
+.drop-sub { color: var(--muted); font-size: 13px; margin-top: 2px; }
+.field { display: flex; flex-direction: column; gap: 4px; font-size: 13.5px; color: var(--muted); }
+.field > span { font-weight: 600; }
+input[type=url], input[type=text], input[type=search], input[type=number], select, textarea {
+  font: inherit; color: var(--text); background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+  padding: 8px 10px; width: 100%; min-width: 0; }
+textarea { font-family: ui-monospace, Consolas, monospace; font-size: 13px; resize: vertical; }
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+#sheetBox { margin-top: 12px; max-width: 460px; }
+.seg { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+.seg label { display: flex; gap: 8px; align-items: flex-start; border: 1px solid var(--border); border-radius: 10px;
+  padding: 10px 12px; cursor: pointer; }
+.seg label:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+.seg input { margin-top: 4px; }
+.seg small { display: block; color: var(--muted); font-size: 12.5px; }
+.ok { color: var(--pass); } .warn-text { color: var(--warn); } .error { color: var(--fail); }
+code { font-family: ui-monospace, Consolas, monospace; font-size: .92em; background: var(--soft); padding: 1px 5px; border-radius: 4px; }
+.langs { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }
+.lang { display: flex; align-items: center; gap: 8px; border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; }
+.lang .lname { font-weight: 600; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lang .gcode { width: 76px; padding: 3px 6px; font-size: 13px; }
+.lang small { color: var(--muted); font-size: 11.5px; }
+body.manual .gcode, body.manual .gcode-note { display: none; }
+button.link { border: 0; background: none; color: var(--accent); cursor: pointer; font: inherit; font-size: 13px; font-weight: 400; padding: 0 4px; }
+details.adv { border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; }
+details.adv summary { cursor: pointer; font-weight: 600; }
+.adv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 12px; }
+.adv-grid .wide { grid-column: 1 / -1; }
+.check { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.actions { display: flex; align-items: center; gap: 14px; margin-top: 18px; flex-wrap: wrap; }
+button, .btn { font: inherit; border-radius: 8px; padding: 9px 16px; border: 1px solid var(--border); background: var(--panel);
+  color: var(--text); cursor: pointer; text-decoration: none; display: inline-block; }
+button:hover:not(:disabled), .btn:hover { border-color: var(--accent); }
+button.primary, .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+button.big { padding: 11px 26px; font-size: 16px; }
+button:disabled { opacity: .5; cursor: not-allowed; }
+.run-head, .res-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.run-head h2, .res-head h2 { margin: 0; }
+.bar { height: 8px; background: var(--soft); border-radius: 4px; overflow: hidden; }
+.bar > div { height: 100%; width: 0; background: var(--accent); transition: width .3s; }
+.prompt { margin-top: 14px; border: 2px solid var(--accent); background: var(--accent-soft); border-radius: 10px; padding: 14px 16px; }
+.prompt p { margin: 0 0 6px; font-size: 16px; }
+.prompt-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+details.log-box { margin-top: 12px; }
+details.log-box summary { cursor: pointer; color: var(--muted); font-size: 13.5px; }
+pre#log { max-height: 260px; overflow: auto; background: var(--soft); border-radius: 8px; padding: 10px; font-size: 12.5px; white-space: pre-wrap; margin: 8px 0 0; }
+.tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+.tile { border-radius: 10px; padding: 12px 14px; }
+.tile b { display: block; font-size: 26px; line-height: 1.2; }
+.tile span { font-size: 13.5px; }
+.s-pass { background: var(--pass-bg); color: var(--pass); } .s-warn { background: var(--warn-bg); color: var(--warn); }
+.s-fail { background: var(--fail-bg); color: var(--fail); } .s-miss { background: var(--miss-bg); color: var(--miss); }
+.s-none { background: var(--none-bg); color: var(--none); }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 7px 9px; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { font-size: 12.5px; color: var(--muted); font-weight: 600; white-space: nowrap; }
+.langtable td.num { text-align: center; white-space: nowrap; }
+.langtable tbody tr { cursor: pointer; }
+.langtable tbody tr:hover { background: var(--soft); }
+.num .n { display: inline-block; min-width: 28px; padding: 1px 6px; border-radius: 10px; font-weight: 600; }
+.num .zero { color: var(--muted); opacity: .6; }
+.rate { display: flex; align-items: center; gap: 8px; min-width: 130px; }
+.rate .track { flex: 1; height: 6px; border-radius: 3px; background: var(--soft); overflow: hidden; }
+.rate .fill { height: 100%; }
+.badge { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin: -4px 0 14px; flex-wrap: wrap; }
+.tabs button { border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: none; padding: 8px 12px; color: var(--muted); }
+.tabs button.on { color: var(--text); border-bottom-color: var(--accent); font-weight: 600; }
+.filters { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+.filters select { width: auto; }
+.filters input { width: 220px; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { border-radius: 16px; padding: 4px 12px; font-size: 13.5px; }
+.chip.on { background: var(--text); color: var(--panel); border-color: var(--text); }
+.results td.text { min-width: 220px; max-width: 380px; word-break: break-word; }
+.results td.note { min-width: 160px; max-width: 280px; color: var(--muted); font-size: 13px; }
+.results .src { display: block; font-size: 11.5px; color: var(--muted); margin-top: 4px; word-break: break-all; }
+mark.del, mark.ins { background: var(--mark-del); color: inherit; border-radius: 3px; padding: 0 1px; font-weight: 700; }
+mark.ins { background: var(--mark-ins); }
+.ph { color: var(--muted); border-bottom: 1px dotted var(--muted); }
+.empty { padding: 26px; text-align: center; color: var(--muted); }
+.grid td, .grid th { padding: 3px 4px; border: 0; }
+.grid th.lh { text-align: center; font-size: 12px; }
+.grid td.key { font-size: 12.5px; max-width: 280px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--muted); }
+.cell { display: block; height: 24px; min-width: 40px; border-radius: 5px; cursor: pointer; font-size: 11px; text-align: center; line-height: 24px; font-weight: 700; }
+.cell:hover { outline: 2px solid var(--accent); }
+.legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 13px; margin-bottom: 10px; }
+.legend span { display: inline-flex; align-items: center; gap: 5px; }
+.legend i { width: 14px; height: 14px; border-radius: 3px; display: inline-block; }
+.shots-lang { margin-bottom: 16px; }
+.shots-lang h3 { font-size: 15px; margin: 0 0 8px; }
+.thumbs { display: flex; gap: 10px; flex-wrap: wrap; }
+.thumbs a img { width: 220px; border-radius: 6px; border: 1px solid var(--border); display: block; }
+.notice { background: var(--warn-bg); color: var(--warn); border-radius: 8px; padding: 8px 12px; font-size: 13.5px; margin-bottom: 12px; }
+@media (max-width: 720px) {
+  .seg, .adv-grid { grid-template-columns: 1fr; }
+  .tiles { grid-template-columns: 1fr 1fr; }
+  .step { gap: 10px; }
+  .filters input { width: 100%; }
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <h1>FS 多語系比對</h1>
+    <p class="sub">以翻譯 Excel 為標準，檢查遊戲各語言實際顯示的文字</p>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="card" id="setup">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h2>翻譯 Excel</h2>
+        <label class="drop" id="drop">
+          <input type="file" id="file" accept=".xlsx,.xlsm" hidden>
+          <div id="dropMain"><strong>點這裡選擇檔案</strong>，或把 Excel 拖進來</div>
+          <div class="drop-sub" id="dropSub">第一列是語言（EN / ITALY / Thai …），每一列一句文字</div>
+        </label>
+        <div id="sheetBox" hidden>
+          <label class="field"><span>工作表（遊戲）</span><select id="sheet"></select></label>
+          <div id="sheetInfo" class="hint"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h2>遊戲網址</h2>
+        <input id="url" type="url" placeholder="打開遊戲後，瀏覽器網址列上的網址，例如 https://…/game.jsp?id=…&amp;lang=en"
+               autocomplete="off" spellcheck="false">
+        <div id="urlHint" class="hint">貼上打開遊戲後瀏覽器上的網址。</div>
+        <div class="seg" role="radiogroup" aria-label="切換語言的方式">
+          <label><input type="radio" name="mode" value="auto" checked>
+            <span><b>自動切換語言</b><small>網址裡有語言參數（例如 lang=en），程式自動換成各語言、逐一擷取</small></span></label>
+          <label><input type="radio" name="mode" value="manual">
+            <span><b>手動切換語言</b><small>開一個瀏覽器視窗，由你在遊戲裡切換語言、打開說明頁，再到這個網頁按「擷取」</small></span></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h2>要比對的語言 <button type="button" class="link" id="allLangs">全選</button><button type="button" class="link" id="noLangs">全不選</button></h2>
+        <div id="langList" class="langs"><p class="hint">上傳 Excel 後會列出語言。</p></div>
+        <div class="hint gcode-note">右邊的小框是「遊戲網址裡的語言代碼」，偵測到網址格式後會自動填入，遊戲用的代碼不同（例如日文用 jp）時可以修改。</div>
+      </div>
+    </div>
+
+    <details class="adv">
+      <summary>進階設定</summary>
+      <div class="adv-grid">
+        <label class="field"><span>開啟遊戲後等待幾秒再擷取</span><input id="wait" type="number" min="0" step="0.5" value="8"></label>
+        <label class="field"><span>說明按鈕（選填，自動模式會先點它再擷取）</span>
+          <input id="helpSel" type="text" placeholder="例如 #btnHelp 或 text=規則" spellcheck="false"></label>
+        <label class="field wide"><span>開啟後的動作（選填，JSON；可點擊、翻頁、多次擷取，格式見 README）</span>
+          <textarea id="steps" rows="3" spellcheck="false" placeholder='[{"click": "#btnInfo"}, {"capture": "說明第1頁"}, {"click": "text=Next"}, {"capture": "說明第2頁"}]'></textarea></label>
+        <label class="field wide"><span>佔位符（一行一個正規表示式；[WILD] 這類圖示、X 這類數值，比對時當成萬用字元）</span>
+          <textarea id="placeholders" rows="2" spellcheck="false"></textarea></label>
+        <label class="field"><span>模擬裝置</span><select id="device"><option value="">電腦瀏覽器</option></select></label>
+        <label class="check"><input type="checkbox" id="showBrowser"> 自動模式也顯示瀏覽器視窗</label>
+      </div>
+    </details>
+
+    <div class="actions">
+      <button type="button" id="start" class="primary big" disabled>開始比對</button>
+      <span id="startMsg" class="error"></span>
+    </div>
+  </section>
+
+  <section class="card" id="run" hidden>
+    <div class="run-head"><h2 id="runTitle">擷取中</h2><button type="button" id="stop">停止</button></div>
+    <div class="bar"><div id="barFill"></div></div>
+    <div id="runStatus" class="hint"></div>
+    <div id="prompt" class="prompt" hidden>
+      <p id="promptText"></p>
+      <div id="promptPages" class="hint"></div>
+      <div class="prompt-actions" id="promptActions"></div>
+    </div>
+    <details class="log-box" id="logBox"><summary>執行紀錄</summary><pre id="log"></pre></details>
+  </section>
+
+  <section id="results" hidden>
+    <div class="card">
+      <div class="res-head">
+        <h2>比對結果 <span id="resSheet" class="muted"></span></h2>
+        <a id="download" class="btn primary" href="#">下載 Excel 報表</a>
+      </div>
+      <div class="tiles" id="tiles"></div>
+      <div id="notices"></div>
+      <div class="scroll"><table class="langtable" id="langTable"></table></div>
+    </div>
+    <div class="card">
+      <nav class="tabs" id="tabs">
+        <button type="button" data-tab="list" class="on">逐句結果</button>
+        <button type="button" data-tab="grid">總覽表</button>
+        <button type="button" data-tab="lint">Excel 檢查 <span id="lintCount"></span></button>
+        <button type="button" data-tab="shots">截圖</button>
+      </nav>
+      <div data-panel="list">
+        <div class="filters">
+          <div class="chips" id="chips"></div>
+          <select id="fLang"></select>
+          <input id="fText" type="search" placeholder="搜尋文字或儲存格…">
+        </div>
+        <div class="scroll" id="list"></div>
+      </div>
+      <div data-panel="grid" hidden>
+        <div class="legend" id="legend"></div>
+        <div class="scroll" id="grid"></div>
+      </div>
+      <div data-panel="lint" hidden><div class="scroll" id="lint"></div></div>
+      <div data-panel="shots" hidden><div id="shots"></div></div>
+    </div>
+  </section>
+</main>
+
+<script>
+(function () {
+  'use strict';
+  const $ = (s, el) => (el || document).querySelector(s);
+  const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  async function api(path, opts) {
+    opts = opts || {};
+    const headers = Object.assign({ 'X-Fslang': '1' }, opts.headers || {});
+    const res = await fetch(path, Object.assign({}, opts, { headers }));
+    let data;
+    try { data = await res.json(); } catch (e) { data = { error: '伺服器沒有回應（' + res.status + '）' }; }
+    if (!res.ok || data.error) throw new Error(data.error || res.statusText);
+    return data;
+  }
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem('fslang.' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem('fslang.' + k, JSON.stringify(v)); } catch (e) { /* 無痕模式等情況忽略 */ } },
+  };
+
+  const STATUS_CLASS = { PASS: 's-pass', WARN: 's-warn', OUTDATED: 's-fail', WRONG_LANG: 's-fail', MISMATCH: 's-fail',
+    MISSING: 's-miss', NO_CAPTURE: 's-none', NO_EXPECTED: 's-none' };
+  const SHORT = { PASS: '✓', WARN: '!', OUTDATED: '舊', WRONG_LANG: '語', MISMATCH: '✗', MISSING: '?', NO_CAPTURE: '–', NO_EXPECTED: '' };
+  const FAIL = ['OUTDATED', 'WRONG_LANG', 'MISMATCH', 'MISSING'];
+
+  let upload = null;
+  let jobId = null, logCount = 0, promptKey = '';
+  let result = null;
+  let collapsed = [];   // 幾乎整個語言都顯示成別的語言時，逐句清單先收合
+  const filter = { group: 'problem', lang: '', text: '', cell: null };
+  const editedCodes = new Set();
+  let suggestedCodes = {};
+
+  // ------------------------------------------------------------ 1. 上傳 Excel
+  const drop = $('#drop'), fileInput = $('#file');
+  fileInput.addEventListener('change', () => { if (fileInput.files[0]) doUpload(fileInput.files[0]); });
+  ['dragenter', 'dragover'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop', (e) => { const f = e.dataTransfer.files[0]; if (f) doUpload(f); });
+
+  async function doUpload(file) {
+    $('#dropMain').innerHTML = '<strong>讀取中…</strong>';
+    $('#dropSub').textContent = file.name;
+    try {
+      const data = await api('/api/upload', { method: 'POST', body: file, headers: { 'X-Filename': encodeURIComponent(file.name) } });
+      upload = data;
+      drop.classList.add('done');
+      $('#dropMain').innerHTML = '<strong>' + esc(data.filename) + '</strong>';
+      $('#dropSub').textContent = '共 ' + data.sheets.length + ' 個工作表 · 點這裡可以換一個檔案';
+      const sel = $('#sheet');
+      sel.innerHTML = '';
+      data.sheets.forEach((s) => {
+        const o = document.createElement('option');
+        o.value = s.name;
+        o.textContent = s.name + (s.error ? '（' + s.error + '）' : '（' + s.rows + ' 句）');
+        o.disabled = !!s.error;
+        sel.appendChild(o);
+      });
+      const last = store.get('sheet', '');
+      const usable = data.sheets.filter((s) => !s.error);
+      if (usable.some((s) => s.name === last)) sel.value = last; else if (usable[0]) sel.value = usable[0].name;
+      $('#sheetBox').hidden = false;
+      onSheetChange();
+    } catch (e) {
+      upload = null;
+      drop.classList.remove('done');
+      $('#dropMain').innerHTML = '<strong class="error">上傳失敗</strong>';
+      $('#dropSub').textContent = e.message;
+      validate();
+    }
+  }
+
+  function currentSheet() {
+    if (!upload) return null;
+    return upload.sheets.find((s) => s.name === $('#sheet').value && !s.error) || null;
+  }
+
+  $('#sheet').addEventListener('change', onSheetChange);
+  function onSheetChange() {
+    const s = currentSheet();
+    if (!s) { validate(); return; }
+    store.set('sheet', s.name);
+    const revs = s.languages.filter((l) => l.revision).map((l) => l.name + ' → ' + l.revision);
+    $('#sheetInfo').innerHTML = '原文 <code>' + esc(s.source) + '</code> · ' + s.languages.length + ' 個語言 · ' + s.rows + ' 句'
+      + (revs.length ? ' · 修訂欄：' + esc(revs.join('、')) : '')
+      + (s.preset.from_config ? ' · <span class="ok">已套用 configs/ 中這個遊戲的設定</span>' : '');
+    const p = s.preset;
+    $('#placeholders').value = (p.placeholders || []).join('\n');
+    $('#steps').value = p.steps && p.steps.length ? JSON.stringify(p.steps) : '';
+    if (p.wait_seconds) $('#wait').value = p.wait_seconds;
+    if (p.game_url && !$('#url').value) $('#url').value = p.game_url;
+    editedCodes.clear();
+    renderLangs(s);
+    detectUrl();
+  }
+
+  function renderLangs(s) {
+    const off = new Set(store.get('off.' + s.name, []));
+    const codes = (s.preset.game_lang_codes) || {};
+    $('#langList').innerHTML = s.languages.map((l) => (
+      '<label class="lang"><input type="checkbox" class="lc" data-code="' + esc(l.code) + '"' + (off.has(l.code) ? '' : ' checked') + '>'
+      + '<span class="lname" title="' + esc(l.name) + '">' + esc(l.name) + '<br><small>' + esc(l.code)
+      + (l.revision ? ' · 修訂欄 ' + esc(l.revision) : '') + (l.filled < s.rows ? ' · 已翻譯 ' + l.filled + '/' + s.rows : '') + '</small></span>'
+      + '<input class="gcode" data-code="' + esc(l.code) + '" value="' + esc(codes[l.code] || l.code) + '" title="遊戲網址裡的語言代碼" spellcheck="false">'
+      + '</label>')).join('');
+    $$('.lc').forEach((c) => c.addEventListener('change', () => { saveOff(); validate(); }));
+    $$('.gcode').forEach((g) => g.addEventListener('input', () => editedCodes.add(g.dataset.code)));
+    validate();
+  }
+  function saveOff() {
+    const s = currentSheet();
+    if (s) store.set('off.' + s.name, $$('.lc').filter((c) => !c.checked).map((c) => c.dataset.code));
+  }
+  $('#allLangs').addEventListener('click', () => { $$('.lc').forEach((c) => { c.checked = true; }); saveOff(); validate(); });
+  $('#noLangs').addEventListener('click', () => { $$('.lc').forEach((c) => { c.checked = false; }); saveOff(); validate(); });
+
+  // ------------------------------------------------------------ 2. 遊戲網址
+  let detectTimer = null, urlFound = false;
+  $('#url').addEventListener('input', () => { clearTimeout(detectTimer); detectTimer = setTimeout(detectUrl, 300); validate(); });
+  $$('input[name=mode]').forEach((r) => r.addEventListener('change', () => { applyMode(); detectUrl(); }));
+
+  function mode() { return $('input[name=mode]:checked').value; }
+  function applyMode() {
+    document.body.classList.toggle('manual', mode() === 'manual');
+    $('#start').textContent = mode() === 'manual' ? '開啟瀏覽器開始擷取' : '開始比對';
+    validate();
+  }
+
+  async function detectUrl() {
+    const url = $('#url').value.trim();
+    const hint = $('#urlHint');
+    const s = currentSheet();
+    const codes = s ? s.languages.map((l) => l.code) : [];
+    urlFound = false;
+    if (!url) {
+      hint.className = 'hint';
+      hint.textContent = mode() === 'manual'
+        ? '手動模式：可以貼遊戲列表或遊戲的網址當作起始頁（也可以留空）。'
+        : '貼上打開遊戲後瀏覽器上的網址。';
+      validate();
+      return;
+    }
+    try {
+      const d = await api('/api/detect-url', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url, codes }) });
+      if (url !== $('#url').value.trim()) return;
+      urlFound = d.found;
+      if (d.found) {
+        hint.className = 'hint ok';
+        hint.innerHTML = mode() === 'manual'
+          ? '手動模式會從這個網址開始，語言由你在遊戲裡切換。'
+          : '✓ 偵測到語言：<code>' + esc(d.where) + '</code>，會自動換成各語言。網址樣板：<code>' + esc(d.template) + '</code>';
+        suggestedCodes = d.game_codes || {};
+        $$('.gcode').forEach((g) => { if (!editedCodes.has(g.dataset.code) && suggestedCodes[g.dataset.code]) g.value = suggestedCodes[g.dataset.code]; });
+      } else if (mode() === 'manual') {
+        hint.className = 'hint';
+        hint.textContent = '手動模式會從這個網址開始，語言由你在遊戲裡切換。';
+      } else {
+        hint.className = 'hint warn-text';
+        hint.innerHTML = '網址裡找不到語言參數（例如 <code>lang=en</code>），沒辦法自動切換語言。'
+          + '可以把網址中語言的位置改成 <code>{lang}</code>，或改選「手動切換語言」。';
+      }
+    } catch (e) {
+      hint.className = 'hint error';
+      hint.textContent = e.message;
+    }
+    validate();
+  }
+
+  function selectedLangs() {
+    return $$('.lc').filter((c) => c.checked).map((c) => ({
+      code: c.dataset.code,
+      game_code: ($('.gcode[data-code="' + CSS.escape(c.dataset.code) + '"]') || {}).value || c.dataset.code,
+    }));
+  }
+
+  function validate() {
+    const running = jobId && !result && !$('#run').hidden && $('#runTitle').dataset.state !== 'end';
+    const ok = upload && currentSheet() && selectedLangs().length > 0
+      && (mode() === 'manual' || ($('#url').value.trim() && urlFound));
+    $('#start').disabled = !ok || running;
+  }
+
+  // ------------------------------------------------------------ 開始
+  $('#start').addEventListener('click', start);
+  async function start() {
+    const s = currentSheet();
+    const params = {
+      upload_id: upload.upload_id, sheet: s.name, url: $('#url').value.trim(), mode: mode(),
+      langs: selectedLangs(), wait_seconds: parseFloat($('#wait').value) || 0,
+      help_selector: $('#helpSel').value.trim(), steps: $('#steps').value.trim(),
+      placeholders: $('#placeholders').value.split('\n'), device: $('#device').value,
+      show_browser: $('#showBrowser').checked,
+    };
+    store.set('form', { url: params.url, mode: params.mode, wait: $('#wait').value, help: params.help_selector,
+      device: params.device, show: params.show_browser });
+    $('#startMsg').textContent = '';
+    try {
+      const d = await api('/api/jobs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(params) });
+      jobId = d.job_id; logCount = 0; promptKey = ''; result = null;
+      $('#log').textContent = '';
+      $('#results').hidden = true;
+      $('#run').hidden = false;
+      $('#runTitle').dataset.state = '';
+      $('#stop').hidden = false;
+      $('#runTitle').textContent = params.mode === 'manual' ? '手動擷取中' : '自動擷取中';
+      $('#run').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      validate();
+      poll();
+    } catch (e) {
+      $('#startMsg').textContent = e.message;
+    }
+  }
+
+  let pollTimer = null;
+  async function poll() {
+    clearTimeout(pollTimer);
+    if (!jobId) return;
+    const current = jobId;
+    try {
+      const st = await api('/api/jobs/' + current + '?since=' + logCount);
+      if (current !== jobId) return;
+      if (st.log.length) {
+        const pre = $('#log');
+        pre.textContent += st.log.join('\n') + '\n';
+        pre.scrollTop = pre.scrollHeight;
+      }
+      logCount = st.log_total;
+      renderRun(st);
+      if (st.state === 'done') {
+        endRun('比對完成');
+        const n = st.result.languages.filter((l) => l.captured).length;
+        $('#runStatus').textContent = '已擷取 ' + n + ' 個語言並比對完成，結果在下方。';
+        renderResults(st.result);
+        return;
+      }
+      if (st.state === 'error') { endRun('發生錯誤'); $('#runStatus').innerHTML = '<span class="error">' + esc(st.error) + '</span>'; $('#logBox').open = true; return; }
+    } catch (e) {
+      $('#runStatus').innerHTML = '<span class="error">和伺服器的連線中斷：' + esc(e.message) + '（請確認 fslang serve 還在執行）</span>';
+    }
+    pollTimer = setTimeout(poll, 700);
+  }
+
+  function langName(code) {
+    const s = currentSheet();
+    const l = s && s.languages.find((x) => x.code === code);
+    return l ? l.name : code;
+  }
+
+  function renderRun(st) {
+    const p = st.progress || {};
+    const pct = p.total ? Math.round(100 * (st.state === 'comparing' ? 1 : (p.done || 0) / p.total)) : 0;
+    $('#barFill').style.width = pct + '%';
+    let text = '';
+    if (st.state === 'comparing') text = '擷取完成，比對中…';
+    else if (st.state === 'waiting') text = '等你操作（第 ' + ((p.done || 0) + 1) + ' / ' + p.total + ' 個語言）';
+    else if (p.lang) text = '擷取中：' + langName(p.lang) + '（第 ' + ((p.done || 0) + 1) + ' / ' + p.total + ' 個語言）';
+    else text = '準備中…';
+    $('#runStatus').textContent = text;
+    renderPrompt(st.prompt);
+  }
+
+  function renderPrompt(pr) {
+    const box = $('#prompt');
+    const key = pr ? pr.kind + pr.lang + (pr.count || '') : '';
+    if (key === promptKey) return;
+    promptKey = key;
+    if (!pr) { box.hidden = true; return; }
+    box.hidden = false;
+    const name = '<b>' + esc(pr.name) + '</b>（' + esc(pr.lang) + '）';
+    let buttons;
+    if (pr.kind === 'language') {
+      $('#promptText').innerHTML = '請在跳出的瀏覽器視窗中，把遊戲切換成「' + name + '」，並打開要檢查的畫面（例如遊戲說明／規則頁），然後按「擷取這個畫面」。'
+        + '<span class="muted">（第 ' + pr.index + ' / ' + pr.total + ' 個語言）</span>';
+      $('#promptPages').textContent = '';
+      buttons = [['capture', '擷取這個畫面', true], ['skip', '跳過這個語言'], ['quit', '結束擷取，開始比對']];
+    } else {
+      $('#promptText').innerHTML = '已擷取「' + name + '」第 ' + pr.count + ' 次。說明還有下一頁的話，翻頁後按「再擷取一頁」；否則按「下一個語言」。';
+      $('#promptPages').innerHTML = (pr.pages || []).map((u) => '頁面：<code>' + esc(u) + '</code>').join('<br>');
+      buttons = [['next', '下一個語言', true], ['capture', '再擷取一頁'], ['quit', '結束擷取，開始比對']];
+    }
+    $('#promptActions').innerHTML = buttons.map((b) => '<button type="button" data-act="' + b[0] + '"' + (b[2] ? ' class="primary"' : '') + '>' + b[1] + '</button>').join('');
+    $$('#promptActions button').forEach((btn) => btn.addEventListener('click', () => act(btn.dataset.act)));
+  }
+
+  async function act(action) {
+    $$('#promptActions button').forEach((b) => { b.disabled = true; });
+    try { await api('/api/jobs/' + jobId + '/action', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action }) }); }
+    catch (e) { $('#runStatus').innerHTML = '<span class="error">' + esc(e.message) + '</span>'; }
+    promptKey = '';
+    poll();
+  }
+  $('#stop').addEventListener('click', () => act('stop'));
+
+  function endRun(title) {
+    $('#runTitle').textContent = title;
+    $('#runTitle').dataset.state = 'end';
+    $('#stop').hidden = true;
+    $('#prompt').hidden = true;
+    $('#barFill').style.width = '100%';
+    validate();
+  }
+
+  // ------------------------------------------------------------ 結果
+  function sum(statuses, c) { return statuses.reduce((a, s) => a + (c[s] || 0), 0); }
+
+  function renderResults(r) {
+    result = r;
+    $('#results').hidden = false;
+    $('#resSheet').textContent = '· ' + r.sheet;
+    $('#download').href = r.report;
+    const total = {};
+    r.languages.forEach((l) => Object.keys(l.counts).forEach((k) => { total[k] = (total[k] || 0) + l.counts[k]; }));
+    $('#tiles').innerHTML = [
+      ['s-pass', total.PASS || 0, '正確'],
+      ['s-warn', total.WARN || 0, '警告（格式差異）'],
+      ['s-fail', sum(FAIL, total), '有問題'],
+      ['s-none', total.NO_CAPTURE || 0, '未擷取'],
+    ].map((t) => '<div class="tile ' + t[0] + '"><b>' + t[1] + '</b><span>' + t[2] + '</span></div>').join('');
+
+    const wrong = r.languages.filter((l) => {
+      const checked = sum(r.status_order, l.counts) - (l.counts.NO_CAPTURE || 0) - (l.counts.NO_EXPECTED || 0);
+      return checked && l.counts.WRONG_LANG >= Math.max(3, checked * 0.5);
+    });
+    collapsed = wrong.map((l) => l.code);
+    $('#notices').innerHTML = wrong.map((l) => '<div class="notice">' + esc(l.name) + '：' + l.counts.WRONG_LANG
+      + ' 句顯示成其他語言，可能遊戲沒有切換到 ' + esc(l.name) + '，或缺少這個語言的語系檔。</div>').join('');
+
+    const cols = ['PASS', 'WARN', 'OUTDATED', 'WRONG_LANG', 'MISMATCH', 'MISSING', 'NO_CAPTURE'];
+    $('#langTable').innerHTML = '<thead><tr><th>語言</th><th>正確率</th>' + cols.map((c) => '<th class="num">' + esc(r.status_labels[c]) + '</th>').join('') + '</tr></thead><tbody>'
+      + r.languages.map((l) => {
+        const rate = l.rate == null ? null : l.rate;
+        const color = rate == null ? 'var(--none)' : rate >= 0.999 ? 'var(--pass)' : rate >= 0.9 ? 'var(--warn)' : 'var(--fail)';
+        return '<tr data-lang="' + esc(l.code) + '"><td><b>' + esc(l.name) + '</b> <span class="muted">' + esc(l.code) + '</span></td>'
+          + '<td><div class="rate"><div class="track"><div class="fill" style="width:' + (rate == null ? 0 : Math.round(rate * 100)) + '%;background:' + color + '"></div></div>'
+          + '<span>' + (rate == null ? '—' : (rate * 100).toFixed(rate >= 0.999 ? 0 : 1) + '%') + '</span></div></td>'
+          + cols.map((c) => {
+            const n = l.counts[c] || 0;
+            return '<td class="num">' + (n ? '<span class="n ' + STATUS_CLASS[c] + '">' + n + '</span>' : '<span class="zero">0</span>') + '</td>';
+          }).join('') + '</tr>';
+      }).join('') + '</tbody>';
+    $$('#langTable tbody tr').forEach((tr) => tr.addEventListener('click', () => {
+      filter.lang = tr.dataset.lang; filter.cell = null; $('#fLang').value = filter.lang;
+      showTab('list'); renderList(); $('#tabs').scrollIntoView({ behavior: 'smooth' });
+    }));
+
+    $('#fLang').innerHTML = '<option value="">全部語言</option>' + r.languages.map((l) => '<option value="' + esc(l.code) + '">' + esc(l.name) + '</option>').join('');
+    filter.lang = ''; filter.text = ''; filter.cell = null; $('#fText').value = '';
+    filter.group = sum(FAIL, total) + (total.WARN || 0) ? 'problem' : 'all';
+    renderChips(); renderList(); renderGrid(); renderLint(); renderShots();
+    showTab('list');
+    $('#results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  const GROUPS = [
+    ['problem', '需要確認', (s) => FAIL.includes(s) || s === 'WARN'],
+    ['fail', '有問題', (s) => FAIL.includes(s)],
+    ['warn', '警告', (s) => s === 'WARN'],
+    ['pass', '正確', (s) => s === 'PASS'],
+    ['none', '未擷取 / 無翻譯', (s) => s === 'NO_CAPTURE' || s === 'NO_EXPECTED'],
+    ['all', '全部', () => true],
+  ];
+  function renderChips() {
+    $('#chips').innerHTML = GROUPS.map((g) => {
+      const n = result.results.filter((x) => g[2](x.status)).length;
+      return '<button type="button" class="chip' + (filter.group === g[0] ? ' on' : '') + '" data-g="' + g[0] + '">' + g[1] + ' ' + n + '</button>';
+    }).join('');
+    $$('#chips .chip').forEach((b) => b.addEventListener('click', () => { filter.group = b.dataset.g; filter.cell = null; renderChips(); renderList(); }));
+  }
+  $('#fLang').addEventListener('change', () => { filter.lang = $('#fLang').value; filter.cell = null; renderList(); });
+  $('#fText').addEventListener('input', () => { filter.text = $('#fText').value.trim().toLowerCase(); renderList(); });
+
+  function side(r, which) {
+    if (!r.diff) return esc(which === 'a' ? r.expected : (r.actual || ''));
+    return r.diff.map((seg) => {
+      const tag = seg[0], t = which === 'a' ? seg[1] : seg[2];
+      if (!t) return '';
+      if (tag === 'equal') return esc(t);
+      if (tag === 'placeholder') return '<span class="ph">' + esc(t) + '</span>';
+      return '<mark class="' + (which === 'a' ? 'del' : 'ins') + '">' + esc(t) + '</mark>';
+    }).join('');
+  }
+
+  function renderList() {
+    const g = GROUPS.find((x) => x[0] === filter.group) || GROUPS[GROUPS.length - 1];
+    const hideWrong = !filter.cell && !filter.lang && (filter.group === 'problem' || filter.group === 'fail');
+    const hidden = {};
+    let rows = result.results.filter((r) => {
+      if (filter.cell) return r.row === filter.cell.row && r.lang === filter.cell.lang;
+      if (!g[2](r.status)) return false;
+      if (filter.lang && r.lang !== filter.lang) return false;
+      if (hideWrong && r.status === 'WRONG_LANG' && collapsed.includes(r.lang)) {
+        hidden[r.lang] = (hidden[r.lang] || 0) + 1;
+        return false;
+      }
+      if (filter.text) {
+        const hay = (r.cell + ' ' + r.expected + ' ' + (r.actual || '') + ' ' + r.key + ' ' + r.note).toLowerCase();
+        if (!hay.includes(filter.text)) return false;
+      }
+      return true;
+    });
+    const limit = 600;
+    const more = rows.length > limit ? rows.length - limit : 0;
+    rows = rows.slice(0, limit);
+    const folded = Object.keys(hidden).map((code) => {
+      const l = result.languages.find((x) => x.code === code);
+      return '<p class="hint">已收合 ' + esc(l ? l.name : code) + ' 的 ' + hidden[code] + ' 句「語言錯誤」（見上方提示）。'
+        + '<button type="button" class="link show-lang" data-lang="' + esc(code) + '">展開</button></p>';
+    }).join('');
+    if (!rows.length) {
+      $('#list').innerHTML = folded + '<div class="empty">' + (filter.group === 'problem' || filter.group === 'fail' ? '沒有需要確認的句子' : '沒有符合的結果') + '</div>';
+      bindShowLang();
+      return;
+    }
+    $('#list').innerHTML = folded + (filter.cell ? '<p class="hint">只顯示 ' + esc(rows[0].cell) + '。<button type="button" class="link" id="clearCell">顯示全部</button></p>' : '')
+      + '<table class="results"><thead><tr><th>儲存格</th><th>語言</th><th>結果</th><th>Excel（標準）</th><th>遊戲（實際）</th><th>說明</th></tr></thead><tbody>'
+      + rows.map((r) => '<tr><td>' + esc(r.cell) + '</td><td>' + esc(r.lang_name) + '</td>'
+        + '<td><span class="badge ' + STATUS_CLASS[r.status] + '">' + esc(r.label) + '</span>'
+        + (r.similarity != null && r.status !== 'PASS' && r.status !== 'WARN' ? '<br><small class="muted">相似度 ' + Math.round(r.similarity * 100) + '%</small>' : '') + '</td>'
+        + '<td class="text">' + side(r, 'a') + '<span class="src">原文：' + esc(r.key) + '</span></td>'
+        + '<td class="text">' + (r.actual ? side(r, 'b') : '<span class="muted">—</span>') + (r.source ? '<span class="src">' + esc(r.source) + '</span>' : '') + '</td>'
+        + '<td class="note">' + esc(r.note) + '</td></tr>').join('')
+      + '</tbody></table>' + (more ? '<p class="hint">還有 ' + more + ' 筆，請用篩選縮小範圍或下載 Excel 報表。</p>' : '');
+    const clear = $('#clearCell');
+    if (clear) clear.addEventListener('click', () => { filter.cell = null; renderList(); });
+    bindShowLang();
+  }
+  function bindShowLang() {
+    $$('#list .show-lang').forEach((b) => b.addEventListener('click', () => {
+      filter.lang = b.dataset.lang; $('#fLang').value = filter.lang; renderList();
+    }));
+  }
+
+  function renderGrid() {
+    const r = result;
+    const by = {};
+    r.results.forEach((x) => { by[x.row + '|' + x.lang] = x; });
+    $('#legend').innerHTML = r.status_order.map((s) => '<span><i class="' + STATUS_CLASS[s] + '"></i>' + esc(r.status_labels[s]) + '</span>').join('');
+    $('#grid').innerHTML = '<table class="grid"><thead><tr><th>列</th><th>原文</th>' + r.languages.map((l) => '<th class="lh">' + esc(l.name) + '</th>').join('') + '</tr></thead><tbody>'
+      + r.rows.map((row) => '<tr><td class="muted">' + row.row + '</td><td class="key" title="' + esc(row.key) + '">' + esc(row.key) + '</td>'
+        + r.languages.map((l) => {
+          const x = by[row.row + '|' + l.code];
+          if (!x) return '<td></td>';
+          const tip = x.cell + ' ' + x.label + (x.note ? '：' + x.note : '');
+          return '<td><span class="cell ' + STATUS_CLASS[x.status] + '" data-row="' + row.row + '" data-lang="' + esc(l.code) + '" title="' + esc(tip) + '">' + SHORT[x.status] + '</span></td>';
+        }).join('') + '</tr>').join('') + '</tbody></table>';
+    $$('#grid .cell').forEach((c) => c.addEventListener('click', () => {
+      filter.cell = { row: Number(c.dataset.row), lang: c.dataset.lang };
+      showTab('list'); renderList();
+    }));
+  }
+
+  function renderLint() {
+    const issues = result.issues || [];
+    const errors = issues.filter((i) => i.severity === 'ERROR').length;
+    $('#lintCount').textContent = issues.length ? '(' + issues.length + ')' : '';
+    if (!issues.length) { $('#lint').innerHTML = '<div class="empty">Excel 翻譯沒有發現問題</div>'; return; }
+    $('#lint').innerHTML = '<p class="hint">不需要連到遊戲，直接檢查 Excel 翻譯本身：錯誤 ' + errors + ' 筆、警告 ' + (issues.length - errors) + ' 筆。</p>'
+      + '<table class="results"><thead><tr><th>儲存格</th><th>語言</th><th>等級</th><th>說明</th><th>翻譯文字</th></tr></thead><tbody>'
+      + issues.map((i) => '<tr><td>' + esc(i.cell) + '</td><td>' + esc(i.lang_name) + '</td><td><span class="badge ' + (i.severity === 'ERROR' ? 's-fail' : 's-warn') + '">'
+        + (i.severity === 'ERROR' ? '錯誤' : '警告') + '</span></td><td>' + esc(i.message) + '</td><td class="text">' + esc(i.text) + '</td></tr>').join('')
+      + '</tbody></table>';
+  }
+
+  function renderShots() {
+    const langs = result.languages.filter((l) => l.screenshots.length);
+    if (!langs.length) { $('#shots').innerHTML = '<div class="empty">沒有截圖</div>'; return; }
+    $('#shots').innerHTML = '<p class="hint">擷取當下的畫面，用來人工確認（例如畫在圖片上的文字）。點圖片可放大。</p>'
+      + langs.map((l) => '<div class="shots-lang"><h3>' + esc(l.name) + '</h3><div class="thumbs">'
+        + l.screenshots.map((f) => {
+          const src = '/api/jobs/' + jobId + '/files/' + encodeURIComponent(f);
+          return '<a href="' + src + '" target="_blank" rel="noopener"><img loading="lazy" src="' + src + '" alt="' + esc(l.name + ' ' + f) + '"></a>';
+        }).join('') + '</div></div>').join('');
+  }
+
+  function showTab(name) {
+    $$('#tabs button').forEach((b) => b.classList.toggle('on', b.dataset.tab === name));
+    $$('[data-panel]').forEach((p) => { p.hidden = p.dataset.panel !== name; });
+  }
+  $$('#tabs button').forEach((b) => b.addEventListener('click', () => showTab(b.dataset.tab)));
+
+  // ------------------------------------------------------------ 初始化
+  (async function init() {
+    const f = store.get('form', {});
+    if (f.url) $('#url').value = f.url;
+    if (f.mode) { const r = $('input[name=mode][value="' + f.mode + '"]'); if (r) r.checked = true; }
+    if (f.wait) $('#wait').value = f.wait;
+    if (f.help) $('#helpSel').value = f.help;
+    if (f.show) $('#showBrowser').checked = true;
+    try {
+      const info = await api('/api/info');
+      info.devices.filter(Boolean).forEach((d) => { const o = document.createElement('option'); o.value = d; o.textContent = d; $('#device').appendChild(o); });
+      if (f.device) $('#device').value = f.device;
+    } catch (e) { /* 伺服器沒開時下面的操作會顯示錯誤 */ }
+    applyMode();
+    detectUrl();
+  })();
+})();
+</script>
+</body>
+</html>

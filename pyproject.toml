@@ -15,6 +15,9 @@ fslang = "fslang.cli:main"
 [tool.setuptools]
 packages = ["fslang"]
 
+[tool.setuptools.package-data]
+fslang = ["web/*.html"]
+
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]

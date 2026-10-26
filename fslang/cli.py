@@ -5,6 +5,7 @@
     python -m fslang collect  -c configs/tree_of_wild.json --interactive
     python -m fslang compare  -c configs/tree_of_wild.json
     python -m fslang run      -c configs/tree_of_wild.json      (collect + compare)
+    python -m fslang serve                                       (網頁介面)
 """
 
 from __future__ import annotations
@@ -16,11 +17,11 @@ from datetime import datetime
 from pathlib import Path
 
 from .config import GameConfig, config_from_args, load_config
-from .corpus import load_captures
 from .excel import TranslationSheet, list_sheets, load_sheet
 from .lint import ERROR, lint_sheet
-from .matcher import FAIL_STATUSES, STATUS_LABELS, Matcher, compare, summarize
-from .report import write_compare_report, write_lint_report
+from .matcher import FAIL_STATUSES, STATUS_LABELS, summarize
+from .pipeline import compare_captures, write_report
+from .report import write_lint_report
 
 
 def _setup_stdout():
@@ -132,12 +133,10 @@ def cmd_compare(args):
     cfg, sheet = _load(args)
     langs = _langs(args, sheet)
     captures = _captures_dir(args, cfg)
-    corpora = load_captures(captures, langs)
-    if not corpora:
+    outcome = compare_captures(cfg, sheet, captures, langs, lint=not args.no_lint)
+    if not outcome.captured_langs:
         print(f"! 在 {captures} 找不到任何擷取檔（檔名需以語言代碼開頭，例如 th.json、th.txt）")
-    matcher = Matcher(cfg.placeholders, cfg.match["wildcard_max_chars"], cfg.match["similarity_threshold"])
-    results = compare(sheet, corpora, matcher, langs)
-    issues = None if args.no_lint else lint_sheet(sheet, cfg.placeholders, cfg.keywords, langs)
+    results, issues = outcome.results, outcome.issues
 
     # 主控台摘要
     summary = summarize(results)
@@ -172,9 +171,16 @@ def cmd_compare(args):
         _print_issues(issues, min(args.show, 10))
 
     out = Path(args.out) if args.out else Path("reports") / f"{cfg.game_id}_{_timestamp()}.xlsx"
-    write_compare_report(out, sheet, results, issues, {"game_name": cfg.game_name, "captures": str(captures)})
+    write_report(out, cfg, sheet, outcome, captures)
     print(f"\n報表：{out}")
     return 1 if any(r.status in FAIL_STATUSES for r in results) else 0
+
+
+def cmd_serve(args):
+    from .web import serve
+
+    serve(args.host, args.port, open_browser=not args.no_browser, workdir=args.workdir)
+    return 0
 
 
 def cmd_run(args):
@@ -234,6 +240,13 @@ def build_parser() -> argparse.ArgumentParser:
     collect_args(p)
     compare_args(p)
     p.set_defaults(func=cmd_run)
+
+    p = sub.add_parser("serve", help="開啟網頁介面：上傳 Excel、貼上遊戲網址就開始比對")
+    p.add_argument("--host", default="127.0.0.1", help="預設只開放本機（127.0.0.1）")
+    p.add_argument("--port", type=int, default=8000)
+    p.add_argument("--no-browser", action="store_true", help="不要自動打開瀏覽器")
+    p.add_argument("--workdir", default="web_runs", help="上傳檔、擷取檔、報表的存放資料夾")
+    p.set_defaults(func=cmd_serve)
     return parser
 
 
