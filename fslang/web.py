@@ -606,7 +606,11 @@ def serve(host: str = "127.0.0.1", port: int = 8000, open_browser: bool = True, 
     server = make_server(host, port, workdir)
     shown = "127.0.0.1" if host in ("0.0.0.0", "", "::") else host
     url = f"http://{shown}:{server.server_address[1]}/"
+    root = Path(__file__).resolve().parents[1]
+    from .launcher import set_console_title
+    set_console_title(f"FS 多語系比對 {__version__} - {url} - {root}")
     print(f"fslang {__version__} 網頁介面已啟動：{url}")
+    print(f"程式資料夾：{root}")
     print("在網頁上傳 Excel、貼上遊戲網址就可以開始比對。按 Ctrl+C 結束。")
     if open_browser:
         threading.Timer(0.8, webbrowser.open, [url]).start()

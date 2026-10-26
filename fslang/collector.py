@@ -21,6 +21,7 @@ import re
 from datetime import datetime
 from pathlib import Path
 
+from .browsers import launch_attempts
 from .config import GameConfig
 from .corpus import CAPTURE_FORMAT
 from .excel import TranslationSheet
@@ -375,30 +376,20 @@ async def _collect_interactive(p, browser, cfg: GameConfig, sheet: TranslationSh
     return saved
 
 
-# 依序嘗試的瀏覽器：Playwright 下載的 Chromium，沒有的話改用電腦上已安裝的 Edge / Chrome
-_BROWSER_CHOICES = {
-    "auto": [None, "msedge", "chrome"],
-    "chromium": [None],
-    "msedge": ["msedge"],
-    "chrome": ["chrome"],
-}
-_BROWSER_NAMES = {None: "Chromium", "msedge": "Microsoft Edge", "chrome": "Google Chrome"}
-
-
 async def _launch(p, headless: bool, choice: str, hooks):
-    channels = _BROWSER_CHOICES.get(choice or "auto", _BROWSER_CHOICES["auto"])
+    """依序嘗試 Playwright 的 Chromium、電腦上的 Edge、Chrome（見 browsers.py）。"""
     errors = []
-    for channel in channels:
+    for label, kwargs in launch_attempts(choice):
         try:
-            browser = await p.chromium.launch(headless=headless, channel=channel)
+            browser = await p.chromium.launch(headless=headless, **kwargs)
         except Exception as e:
-            errors.append(f"{_BROWSER_NAMES[channel]}：{str(e).splitlines()[0]}")
+            errors.append(f"{label}：{str(e).strip().splitlines()[0]}")
             continue
-        if channel:
-            hooks.log(f"使用電腦上的 {_BROWSER_NAMES[channel]}")
+        if kwargs:
+            hooks.log(f"使用電腦上的 {label}")
         return browser
-    raise RuntimeError("找不到可以用的瀏覽器。請執行 python -m playwright install chromium，"
-                       "或安裝 Microsoft Edge / Google Chrome。\n" + "\n".join(errors))
+    raise RuntimeError("找不到可以用的瀏覽器。請雙擊 diagnose.bat 看詳細原因，或執行 "
+                       "python -m playwright install chromium。\n" + "\n".join(errors))
 
 
 async def collect_async(cfg: GameConfig, sheet: TranslationSheet, langs: list[str], out_dir: Path,

@@ -52,6 +52,11 @@
 已經裝了 **GitHub Desktop** 的話，也可以用它 Clone 這個 repo（File → Clone repository → 貼上上面的網址），
 `start_web.bat` 一樣會自動更新。
 
+### 遇到問題時：雙擊 `diagnose.bat`
+
+會列出程式版本與資料夾、套件、哪些瀏覽器可以用、8000 連接埠被哪一版占用、能不能連到 QA 站。
+把整個畫面截圖給負責的人即可。黑色視窗的標題列也會顯示目前執行的版本與資料夾。
+
 ### Windows：用 ZIP 下載（不會自動更新）
 
 在 GitHub 專案頁按綠色的 **Code** → **Download ZIP**，在 ZIP 上按右鍵 → **解壓縮全部**，
@@ -284,6 +289,8 @@ fslang/
   web/index.html 網頁介面
   urltools.py   找出遊戲網址中的語言參數
   launcher.py   start_web.bat 背後的程式：自動更新、安裝套件、啟動網頁
+  browsers.py   找可以用的瀏覽器（Playwright 的 Chromium、Edge、Chrome）
+  doctor.py     診斷工具（diagnose.bat）
 configs/        各遊戲設定
 data/           翻譯 Excel
 examples/demo_game/  示範用假遊戲

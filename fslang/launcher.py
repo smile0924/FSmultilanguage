@@ -76,6 +76,17 @@ def ensure_packages() -> bool:
     return True
 
 
+def set_console_title(text: str) -> None:
+    """Windows 黑色視窗的標題列（用來確認現在跑的是哪一版、哪個資料夾）。"""
+    if os.name != "nt":
+        return
+    try:
+        import ctypes
+        ctypes.windll.kernel32.SetConsoleTitleW(text)
+    except Exception:
+        pass
+
+
 def _pause():
     try:
         input("\n按 Enter 關閉視窗…")
@@ -87,6 +98,7 @@ def main(argv: list[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     update_only = "--update-only" in argv
     argv = [a for a in argv if a != "--update-only"]
+    set_console_title(f"FS 多語系比對 - 更新中 - {ROOT}")
     update()
     if not ensure_packages():
         _pause()

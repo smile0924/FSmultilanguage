@@ -183,6 +183,12 @@ def cmd_serve(args):
     return 0
 
 
+def cmd_doctor(args):
+    from .doctor import main as doctor_main
+
+    return doctor_main()
+
+
 def cmd_run(args):
     rc = cmd_collect(args)
     if rc:
@@ -247,6 +253,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--no-browser", action="store_true", help="不要自動打開瀏覽器")
     p.add_argument("--workdir", default="web_runs", help="上傳檔、擷取檔、報表的存放資料夾")
     p.set_defaults(func=cmd_serve)
+
+    p = sub.add_parser("doctor", help="診斷：版本、瀏覽器、連接埠、QA 站連線")
+    p.set_defaults(func=cmd_doctor)
     return parser
 
 
