@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>多語系文字比對</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232f6fed'/%3E%3Ctext x='16' y='22' font-size='17' text-anchor='middle' fill='white' font-family='sans-serif'%3E文%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+  <script src="vendor/xlsx.full.min.js"></script>
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">文</span>
+      <div>
+        <h1>多語系文字比對</h1>
+        <p>上傳 Excel 翻譯表，檢查遊戲頁面上的文字是否和翻譯一致</p>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="setup">
+      <section class="card" id="refCard">
+        <header class="card-head"><span class="step">1</span><h2>參考文件</h2><span class="hint">Excel 翻譯表，可放多個</span></header>
+        <label class="drop" id="refDrop">
+          <input type="file" id="refFile" accept=".xlsx,.xls,.xlsm,.csv" multiple>
+          <span class="drop-title">拖曳 Excel 到這裡，或<u>點擊選擇檔案</u></span>
+          <span class="drop-sub">可一次選多個檔案；每個分頁一款遊戲，第一列是語言標題（例如 EN、Thai、TH (revised)）</span>
+        </label>
+        <div id="refInfo" class="ref-info" hidden>
+          <ul id="refFiles" class="ref-files"></ul>
+          <label class="add-file"><input type="file" id="refMore" accept=".xlsx,.xls,.xlsm,.csv" multiple>＋ 新增 Excel</label>
+          <label class="field"><span>遊戲</span><select id="sheetSelect"></select></label>
+          <div id="sheetPicks" class="sheet-picks"></div>
+          <p id="sheetMeta" class="meta"></p>
+          <div id="langChips" class="chips"></div>
+        </div>
+      </section>
+
+      <section class="card" id="targetCard">
+        <header class="card-head"><span class="step">2</span><h2>比對對象</h2></header>
+        <div class="tabs" role="tablist">
+          <button type="button" role="tab" data-tab="game" aria-selected="true">遊戲清單</button>
+          <button type="button" role="tab" data-tab="url" aria-selected="false">貼上連結</button>
+          <button type="button" role="tab" data-tab="file" aria-selected="false">上傳頁面檔</button>
+          <button type="button" role="tab" data-tab="text" aria-selected="false">貼上文字</button>
+        </div>
+
+        <div class="tabpanel" data-panel="game">
+          <label class="field"><span>遊戲清單網址</span>
+            <div class="inline">
+              <input id="listUrl" type="url" spellcheck="false">
+              <button type="button" class="btn" id="loadList">載入</button>
+            </div>
+          </label>
+          <label class="field"><span>遊戲</span>
+            <select id="gameSelect" disabled><option>請先載入遊戲清單</option></select>
+          </label>
+          <div class="grid2">
+            <label class="field"><span>內容</span><select id="pageKind" disabled></select></label>
+            <label class="field"><span>語言</span><select id="gameLang" disabled></select></label>
+          </div>
+          <p class="status" id="gameStatus" role="status"></p>
+        </div>
+
+        <div class="tabpanel" data-panel="url" hidden>
+          <label class="field"><span>頁面連結（一行一個；會依網址中的 _th_TH. 等判斷語言）</span>
+            <textarea id="urlInput" rows="5" spellcheck="false" placeholder="https://qa-static.object1.net/…/paytable_th_TH.ba9e9fcd.html"></textarea>
+          </label>
+          <label class="field"><span>網址判斷不出語言時，視為</span><select id="urlLang"></select></label>
+        </div>
+
+        <div class="tabpanel" data-panel="file" hidden>
+          <label class="drop small" id="pageDrop">
+            <input type="file" id="pageFiles" accept=".html,.htm,.txt" multiple>
+            <span class="drop-title">選擇 HTML / TXT 檔（可多選）</span>
+            <span class="drop-sub">依檔名判斷語言，例如 paytable_th_TH.html</span>
+          </label>
+          <ul id="fileList" class="file-list"></ul>
+        </div>
+
+        <div class="tabpanel" data-panel="text" hidden>
+          <label class="field"><span>頁面文字（一行一句）</span><textarea id="textInput" rows="6"></textarea></label>
+          <label class="field"><span>語言</span><select id="textLang"></select></label>
+        </div>
+      </section>
+    </div>
+
+    <section class="card options">
+      <div class="opt-range">
+        <label for="threshold">相似度門檻 <output id="thresholdOut" for="threshold">60%</output></label>
+        <input type="range" id="threshold" min="40" max="95" step="5" value="60">
+        <span class="opt-help">低於門檻視為「頁面找不到」</span>
+      </div>
+      <label class="check"><input type="checkbox" id="optPlaceholders" checked> 方括號 [WILD] 視為佔位符</label>
+      <label class="check"><input type="checkbox" id="optCase"> 忽略英文大小寫</label>
+      <button type="button" id="runBtn" class="btn primary" disabled>開始比對</button>
+    </section>
+
+    <section id="results" hidden>
+      <div class="results-head">
+        <h2>比對結果</h2>
+        <button type="button" id="exportBtn" class="btn" disabled>匯出 Excel 報告</button>
+      </div>
+      <div class="legend">
+        <span class="badge ok">相符</span>
+        <span class="badge bad">仍為舊翻譯</span><span class="legend-text">頁面還是原欄位，未換成 revised</span>
+        <span class="badge bad">文字不符</span><span class="legend-text"><mark class="del">紅底</mark> = Excel 有、頁面沒有；<mark class="ins">黃底</mark> = 頁面多出或不同</span>
+        <span class="badge warn">需看圖確認</span><span class="legend-text">圖片 OCR 讀到的字和 Excel 不完全一樣，請看縮圖判斷</span>
+        <span class="badge warn">空白/標點差異</span>
+        <span class="badge muted">找不到</span><span class="legend-text">遊戲裡沒有相似的文字（未上版，或 OCR 認不出來）</span>
+        <span class="ocr-tag">OCR</span><span class="legend-text">比對的是圖片上的字，請對照縮圖確認</span>
+      </div>
+      <div id="summary" class="summary"></div>
+      <div id="detail"></div>
+    </section>
+  </main>
+</body>
+</html>

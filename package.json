@@ -1,0 +1,14 @@
+{
+  "name": "fs-multilanguage-checker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "比對遊戲頁面文字與多語系 Excel 是否一致",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test test/"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
